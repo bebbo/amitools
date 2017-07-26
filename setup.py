@@ -1,3 +1,4 @@
+<<<<<<< 5478ee5a6fb01e332706e33112fc2f915757decc
 from __future__ import print_function
 
 import os
@@ -60,6 +61,9 @@ inc_dirs = [
 
 extensions = [Extension("musashi.emu", sourcefiles,
   depends=depends, include_dirs=inc_dirs)]
+=======
+from setuptools import setup, find_packages
+>>>>>>> started bare68k integration
 
 # use cython?
 if use_cython:
@@ -84,13 +88,10 @@ scripts = {
 }
 
 setup(
-    cmdclass = {
-        'build_ext': BuildPyCommand,
-    },
     name = "amitools",
     description='A package to support development with classic Amiga m68k systems',
     long_description=open("README.md").read(),
-    version = "0.1.0",
+    version = "0.2.0",
     maintainer = "Christian Vogelgsang",
     maintainer_email = "chris@vogelgsang.org",
     url = "http://github.com/cnvogelg/amitools",
@@ -106,13 +107,16 @@ setup(
     entry_points = scripts,
     setup_requires = ['pytest-runner'],
     tests_require= ['pytest'],
-#    install_requires = ['lhafile==0.2.1'],
+    install_requires = ['lhafile==0.2.1','bare68k'],
     dependency_links = [
       "http://github.com/FrodeSolheim/python-lhafile/zipball/master#egg=lhafile-0.2.1"
     ],
+<<<<<<< 5478ee5a6fb01e332706e33112fc2f915757decc
     ext_modules = extensions,
 # win problems:
 #    use_scm_version=True,
+=======
+>>>>>>> started bare68k integration
     include_package_data=True
 )
 

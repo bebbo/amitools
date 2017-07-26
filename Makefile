@@ -1,5 +1,6 @@
 # Makefile for musashi
 
+<<<<<<< 5478ee5a6fb01e332706e33112fc2f915757decc
 BUILD_DIR = build
 GEN_DIR = gen
 DIST_DIR = dist
@@ -15,24 +16,23 @@ GEN_FILES = $(GEN_SRC:%=$(GEN_DIR)/%) $(GEN_HDR:%=$(GEN_DIR)/%)
 GEN_TOOL_SRC = musashi/m68kmake.c
 GEN_TOOL = m68kmake
 
+=======
+>>>>>>> started bare68k integration
 PYTHON = python
-#PYTHON = python-dbg
 
-.PHONY: all clean_gen clean_gen clean_all
-.PHONY: do_gen do_build_inplace do_test do_dev do_install
+.PHONY: help test dev
 
-do_build_inplace: do_gen
-	$(PYTHON) setup.py build_ext -i
+help:
+	@echo "test       run tests"
+	@echo "dev        dev install"
 
-do_test: do_gen
+test:
 	$(PYTHON) setup.py test
 
-do_install: do_gen
-	$(PYTHON) setup.py install
-
-do_dev: do_gen
+dev:
 	$(PYTHON) setup.py develop --user
 
+<<<<<<< 5478ee5a6fb01e332706e33112fc2f915757decc
 clean: clean_gen
 	rm -rf $(BUILD_DIR)
 
@@ -65,3 +65,5 @@ $(GEN_FILES): $(BUILD_DIR)/$(GEN_TOOL) $(GEN_DIR) $(GEN_INPUT)
 clean_gen:
 	rm -rf $(GEN_DIR)
 
+=======
+>>>>>>> started bare68k integration
