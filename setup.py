@@ -1,76 +1,4 @@
-<<<<<<< 5478ee5a6fb01e332706e33112fc2f915757decc
-from __future__ import print_function
-
-import os
-import sys
-import setuptools.command.build_ext
-
-from subprocess import call
 from setuptools import setup, find_packages
-from distutils.extension import Extension
-
-# has cython?
-try:
-    from Cython.Build import cythonize
-    has_cython = True
-except ImportError:
-    has_cython = False
-
-# use cython?
-use_cython = has_cython
-if '--no-cython' in sys.argv:
-    use_cython = False
-    sys.argv.remove('--no-cython')
-print("use_cython:", use_cython)
-
-# if generated file is missing cython is required
-ext_file = 'musashi/emu.c'
-if not os.path.exists(ext_file) and not use_cython:
-  print("generated cython file missing! cython is essential to proceed!")
-  print("please install with: pip install cyton")
-  sys.exit(1)
-
-
-class BuildPyCommand(setuptools.command.build_ext.build_ext):
-  """Custom build command."""
-
-  def run(self):
-    call(['make', 'do_gen'])
-    setuptools.command.build_ext.build_ext.run(self)
-
-cython_file = 'musashi/emu.pyx'
-sourcefiles = [
-  'musashi/traps.c',
-  'musashi/mem.c',
-  'musashi/m68kcpu.c',
-  'musashi/m68kdasm.c',
-  'gen/m68kopac.c',
-  'gen/m68kopdm.c',
-  'gen/m68kopnz.c',
-  'gen/m68kops.c'
-]
-depends = [
-  'musashi/pycpu.pyx',
-  'musashi/pymem.pyx',
-  'musashi/pytraps.pyx'
-]
-inc_dirs = [
-  'musashi',
-  'gen'
-]
-
-extensions = [Extension("musashi.emu", sourcefiles,
-  depends=depends, include_dirs=inc_dirs)]
-=======
-from setuptools import setup, find_packages
->>>>>>> started bare68k integration
-
-# use cython?
-if use_cython:
-  sourcefiles.append(cython_file)
-  extensions = cythonize(extensions)
-else:
-  sourcefiles.append(ext_file)
 
 scripts = {
   'console_scripts' : [
@@ -111,12 +39,6 @@ setup(
     dependency_links = [
       "http://github.com/FrodeSolheim/python-lhafile/zipball/master#egg=lhafile-0.2.1"
     ],
-<<<<<<< 5478ee5a6fb01e332706e33112fc2f915757decc
-    ext_modules = extensions,
-# win problems:
-#    use_scm_version=True,
-=======
->>>>>>> started bare68k integration
     include_package_data=True
 )
 
