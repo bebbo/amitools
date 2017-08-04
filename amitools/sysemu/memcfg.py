@@ -16,9 +16,12 @@ class AmigaMemoryConfig(MemoryConfig):
            Note: add ram last to fill the sparse regions around special ranges
         """
         # ram always starts at 0
-        res = self.add_ram_range_addr(0, size, units)
+        res = self.add_ram_range_addr(0, size, units, sparse=True)
         self.ram_ranges += res
         return res
+
+    def get_ram_ranges(self):
+        return self.ram_ranges
 
     def add_rom(self, addr, rom, mirror=True):
         """add a ROM to the memory layout"""
