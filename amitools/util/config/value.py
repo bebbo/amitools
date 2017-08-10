@@ -34,10 +34,6 @@ class ConfigBaseValue(object):
         if not type(v) is self.val_type:
             raise ValueError("invalid type: {} of {}".format(type(v), v))
 
-    def store(self, out_dict, v):
-        v = self.parse_value(v)
-        out_dict[self.name] = v
-
 
 class ConfigBoolValue(ConfigBaseValue):
 
@@ -200,21 +196,29 @@ class ConfigValueList(ConfigBaseValue):
         self.entry_cfg = entry_cfg
         if entry_sep is None:
             entry_sep = ','
+        if default is None:
+            default = []
         self.entry_sep = entry_sep
         super(ConfigValueList, self).__init__(name, default, list, description)
 
     def parse_value(self, v):
+        """parse a list entry.
+
+        Either give an empty list with None, a list or tuple to parse the
+        values stored there or a string.
+
+        The string will be split with ``entry_sep`` and then parsed.
+
+        Returns:
+            list    a list of parsed values
+        Raises:
+            ValueError  is parsing went wrong
+        """
         if v is None:
             return []
+        elif type(v) in (tuple, list):
+            return map(self.entry_cfg.parse_value, v)
         else:
             s = str(v)
             entries = s.split(self.entry_sep)
             return map(self.entry_cfg.parse_value, entries)
-
-    def store(self, to_dict, v):
-        # append to list if alreay available
-        l = self.parse_value(v)
-        if self.name in to_dict:
-            to_dict[self.name] += l
-        else:
-            to_dict[self.name] = l
