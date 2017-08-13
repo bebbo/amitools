@@ -217,8 +217,8 @@ class ConfigValueList(ConfigBaseValue):
         if v is None:
             return []
         elif type(v) in (tuple, list):
-            return map(self.entry_cfg.parse_value, v)
+            return list(map(self.entry_cfg.parse_value, v))
         else:
             s = str(v)
             entries = s.split(self.entry_sep)
-            return map(self.entry_cfg.parse_value, entries)
+            return list(map(self.entry_cfg.parse_value, entries))

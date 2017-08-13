@@ -7,3 +7,6 @@ gen/
 emu.c
 emu.so
 .python-version
+.cache
+.eggs
+.tox

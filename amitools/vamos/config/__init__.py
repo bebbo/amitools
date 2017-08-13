@@ -1,2 +1,2 @@
-from VamosConfig import VamosConfig
-from VamosLibConfig import VamosLibConfig
+from .VamosConfig import VamosConfig
+from .VamosLibConfig import VamosLibConfig

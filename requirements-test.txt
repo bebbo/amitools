@@ -1,0 +1,5 @@
+pytest
+pytest-cov
+pytest-pep8
+bare68k
+-e git+http://github.com/FrodeSolheim/python-lhafile#egg=lhafile
