@@ -17,6 +17,12 @@ class ConfigBaseValue(object):
             .format(self.name, self.default, self.val_type,
                     self.description)
 
+    def get_name(self):
+        return self.name
+
+    def get_description(self):
+        return self.description
+
     def get_default(self):
         return self.default
 

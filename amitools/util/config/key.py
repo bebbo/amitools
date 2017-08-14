@@ -16,6 +16,10 @@ class ConfigKey(object):
         self.name = name
         self.case = case
 
+    def __eq__(self, other):
+        """compare a key by its name only."""
+        return self.name == other.name
+
     def match_key(self, key):
         """pass a key an return true if match was found
 

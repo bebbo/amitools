@@ -161,3 +161,35 @@ def test_config_key_regex_case():
     assert not k.match_key("AbZ")
     assert not k.match_key("abzl")
     assert not k.match_key("bz")
+
+# ----- group and set
+
+
+def test_config_group():
+    g = ConfigGroup("grp")
+    v = ConfigIntValue("a_int", 0)
+    g.add_value(v)
+    assert g.match_key("a_int") == (ConfigKey("a_int"), v)
+
+
+def test_config_group_key():
+    g = ConfigGroup("grp")
+    v = ConfigIntValue("a_int", 0)
+    k = ConfigKeyList("a", ["b", "c", "d"], case=True)
+    g.add_key_value(k, v)
+    assert g.match_key("b") == (k, v)
+
+
+def test_config_set():
+    s = ConfigSet()
+    g = ConfigGroup("grp")
+    s.add_group(g)
+    assert s.match_key("grp") == (ConfigKey("grp"), g)
+
+
+def test_config_set_key():
+    s = ConfigSet()
+    g = ConfigGroup("grp")
+    k = ConfigKeyList("a", ["b", "c", "d"], case=True)
+    s.add_key_group(k, g)
+    assert s.match_key("b") == (k, g)
