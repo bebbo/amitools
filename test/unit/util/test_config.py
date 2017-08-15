@@ -1,5 +1,8 @@
 import pytest
 from amitools.util.config import *
+from amitools.util.prelog import PreLogger
+from io import StringIO
+import logging
 
 # ----- values
 
@@ -13,6 +16,7 @@ def test_config_val_bool():
     assert b.parse_value('No') == False
     assert b.parse_value('on') == True
     assert b.parse_value('off') == False
+    assert b.parse_value(u'off') == False
     with pytest.raises(ValueError):
         b.parse_value(1)
     with pytest.raises(ValueError):
@@ -28,6 +32,7 @@ def test_config_val_int():
     assert v.parse_value(42) == 42
     assert v.parse_value("0x10") == 16
     assert v.parse_value("$20") == 32
+    assert v.parse_value(u"10") == 10
     with pytest.raises(ValueError):
         v.parse_value(True)
     with pytest.raises(ValueError):
@@ -51,12 +56,14 @@ def test_config_val_size():
     assert v.get_default() == 2 * 1024 * 1024
     assert v.parse_value("0x10ki") == 16 * 1024
     assert v.parse_value("$4g") == 4 * 1024 * 1024 * 1024
+    assert v.parse_value(u"0x10ki") == 16 * 1024
 
 
 def test_config_val_str():
     v = ConfigStringValue("a_string", "hugo")
     assert v.get_default() == "hugo"
     assert v.parse_value("hello") == "hello"
+    assert v.parse_value(u"hello") == u"hello"
     with pytest.raises(ValueError):
         v.parse_value(True)
     with pytest.raises(ValueError):
@@ -193,3 +200,117 @@ def test_config_set_key():
     k = ConfigKeyList("a", ["b", "c", "d"], case=True)
     s.add_key_group(k, g)
     assert s.match_key("b") == (k, g)
+
+# ----- creator
+
+
+def test_creator():
+    c = ConfigCreator()
+    c.set_entry("grp", "key", 42)
+    assert c.get_cfg_set() == {"grp": {"key": 42}}
+
+
+# ----- config file
+
+def create_config_set():
+    s = ConfigSet()
+    g = ConfigGroup("grp")
+    s.add_group(g)
+    v = ConfigIntValue("bla", 0)
+    g.add_value(v)
+    return s
+
+
+def test_config_file_parser():
+    c = ConfigCreator()
+    s = create_config_set()
+    test = u"""
+[grp]
+bla=12
+"""
+    io = StringIO(test)
+    cf = ConfigFileParser("test", io)
+    pl = PreLogger()
+    ok = cf.parse(s, c, pl)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    cfg = c.get_cfg_set()
+    assert cfg == {'grp': {'bla': 12}}
+
+
+def test_config_file_parser_cfg_error():
+    c = ConfigCreator()
+    s = create_config_set()
+    test = u"""
+[grp]
+bla;12
+"""
+    io = StringIO(test)
+    cf = ConfigFileParser("test", io)
+    pl = PreLogger()
+    ok = cf.parse(s, c, pl)
+    assert not ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 1
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    cfg = c.get_cfg_set()
+    assert cfg == {}
+
+
+def test_config_file_parser_val_error():
+    c = ConfigCreator()
+    s = create_config_set()
+    test = u"""
+[grp]
+bla=12+3
+"""
+    io = StringIO(test)
+    cf = ConfigFileParser("test", io)
+    pl = PreLogger()
+    ok = cf.parse(s, c, pl)
+    assert not ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 1
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+
+
+def test_config_file_parser_invalid_sect_opt():
+    c = ConfigCreator()
+    s = create_config_set()
+    test = u"""
+[grp2]
+bla=12
+
+[grp]
+blub=12
+"""
+    io = StringIO(test)
+    cf = ConfigFileParser("test", io)
+    pl = PreLogger()
+    ok = cf.parse(s, c, pl)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 2
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+
+
+def test_config_file_parser_legacy_map():
+    c = ConfigCreator()
+    s = create_config_set()
+    test = u"""
+[grp_old]
+blob=12
+"""
+    io = StringIO(test)
+    cf = ConfigFileParser("test", io)
+    cf.add_legacy_option("grp_old", "blob", "grp", "bla")
+    pl = PreLogger()
+    ok = cf.parse(s, c, pl)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 1
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    cfg = c.get_cfg_set()
+    assert cfg == {'grp': {'bla': 12}}

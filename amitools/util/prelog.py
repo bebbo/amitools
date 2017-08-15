@@ -37,6 +37,13 @@ class PreLogger(object):
     def get_log_msgs(self):
         return self.msgs
 
+    def get_num_msgs(self, level):
+        num = 0
+        for m in self.msgs:
+            if m[0] == level:
+                num += 1
+        return num
+
     def to_logger(self, logger):
         for msg in self.msgs:
             logger.log(msg[0], msg[1], *msg[2], **msg[3])

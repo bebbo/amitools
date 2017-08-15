@@ -12,6 +12,7 @@ def test_prelog_get_msgs():
     assert msgs[0] == (logging.DEBUG, "a static message", (), {})
     assert msgs[1] == (logging.DEBUG, "with arg %d", (42,), {})
     assert msgs[2] == (logging.DEBUG, "kwarg", (), {"exc_info": False})
+    assert pl.get_num_msgs(logging.DEBUG) == 3
 
 
 def test_prelog_levels():
@@ -28,6 +29,11 @@ def test_prelog_levels():
     assert msgs[2] == (logging.WARNING, "warning", (), {})
     assert msgs[3] == (logging.ERROR, "error", (), {})
     assert msgs[4] == (logging.CRITICAL, "critical", (), {})
+    assert pl.get_num_msgs(logging.DEBUG) == 1
+    assert pl.get_num_msgs(logging.INFO) == 1
+    assert pl.get_num_msgs(logging.WARNING) == 1
+    assert pl.get_num_msgs(logging.ERROR) == 1
+    assert pl.get_num_msgs(logging.CRITICAL) == 1
 
 
 def test_prelog_to_logger():

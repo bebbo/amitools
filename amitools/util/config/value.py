@@ -1,6 +1,12 @@
 """config value classes that define the config entries"""
 
 import os
+import sys
+
+if sys.version_info >= (3, 0, 0):
+    str_type = str
+else:
+    str_type = basestring
 
 
 class ConfigBaseValue(object):
@@ -47,7 +53,7 @@ class ConfigBoolValue(ConfigBaseValue):
         super(ConfigBoolValue, self).__init__(name, default, bool, description)
 
     def _conv_value(self, v):
-        if type(v) is str:
+        if isinstance(v, str_type):
             s = v.lower()
             if s in ('yes', 'on'):
                 return True
@@ -63,7 +69,7 @@ class ConfigIntValue(ConfigBaseValue):
         super(ConfigIntValue, self).__init__(name, default, int, description)
 
     def _conv_value(self, v):
-        if type(v) is str:
+        if isinstance(v, str_type):
             # hex string
             if v.startswith('0x'):
                 return int(v[2:], 16)
@@ -100,7 +106,7 @@ class ConfigSizeValue(ConfigIntValue):
 
     def _conv_value(self, v):
         scale = 1
-        if type(v) is str:
+        if isinstance(v, str_type):
             v = v.lower()
             # skip byte endinng
             if v.endswith('b'):
@@ -134,7 +140,7 @@ class ConfigStringValue(ConfigBaseValue):
     def _conv_value(self, v):
         if self.allow_none and v is None:
             return None
-        if type(v) is not str:
+        if not isinstance(v, str_type):
             raise ValueError("expected string value: {}".format(v))
         return super(ConfigStringValue, self)._conv_value(v)
 
