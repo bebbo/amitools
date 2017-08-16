@@ -22,12 +22,14 @@ class ConfigGroup(object):
         """
         name = val.get_name()
         key = ConfigKey(name)
-        self.add_key_value(key, val)
+        return self.add_key_value(key, val)
 
     def add_key_value(self, key, val):
         """add a config entry by giving its key and value.
         """
-        self.entries.append((key, val))
+        key_val = (key, val)
+        self.entries.append(key_val)
+        return key_val
 
     def match_key(self, name):
         """find a key and return the associated (key, value) tuple or None.
@@ -49,10 +51,12 @@ class ConfigSet(object):
     def add_group(self, grp):
         name = grp.get_name()
         key = ConfigKey(name)
-        self.add_key_group(key, grp)
+        return self.add_key_group(key, grp)
 
     def add_key_group(self, key, grp):
-        self.groups.append((key, grp))
+        key_grp = (key, grp)
+        self.groups.append(key_grp)
+        return key_grp
 
     def match_key(self, name):
         """find a key and return the associated (key, group) tuple or None.

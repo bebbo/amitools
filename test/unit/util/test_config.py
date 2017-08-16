@@ -3,6 +3,7 @@ from amitools.util.config import *
 from amitools.util.prelog import PreLogger
 from io import StringIO
 import logging
+import argparse
 
 # ----- values
 
@@ -218,6 +219,8 @@ def create_config_set():
     s.add_group(g)
     v = ConfigIntValue("bla", 0)
     g.add_value(v)
+    v2 = ConfigEnumValue("foo", ("a", "b", "c"), "a")
+    g.add_value(v2)
     return s
 
 
@@ -314,3 +317,119 @@ blob=12
     assert pl.get_num_msgs(logging.CRITICAL) == 0
     cfg = c.get_cfg_set()
     assert cfg == {'grp': {'bla': 12}}
+
+
+# ----- config args
+
+def test_config_args_value_switch():
+    s = create_config_set()
+    c = ConfigCreator()
+    pl = PreLogger()
+    a = argparse.ArgumentParser()
+    ap = ConfigArgsParser(a)
+    ap.add_value('grp', 'bla', '-b', '--bla', desc="set the bla")
+    # shot arg
+    args = a.parse_args("-b 12".split())
+    ok = ap.parse(s, c, pl, args)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    cfg = c.get_cfg_set()
+    assert cfg == {'grp': {'bla': 12}}
+    # long arg
+    args = a.parse_args("--bla 21".split())
+    ok = ap.parse(s, c, pl, args)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    cfg = c.get_cfg_set()
+    assert cfg == {'grp': {'bla': 21}}
+
+def test_config_args_value_fixed():
+    s = create_config_set()
+    c = ConfigCreator()
+    pl = PreLogger()
+    a = argparse.ArgumentParser()
+    ap = ConfigArgsParser(a)
+    ap.add_value('grp', 'bla', 'foo', desc="set the foo")
+    # shot arg
+    args = a.parse_args("12".split())
+    ok = ap.parse(s, c, pl, args)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    cfg = c.get_cfg_set()
+    assert cfg == {'grp': {'bla': 12}}
+
+def test_config_args_dyn_value_ok():
+    s = create_config_set()
+    c = ConfigCreator()
+    pl = PreLogger()
+    a = argparse.ArgumentParser()
+    ap = ConfigArgsParser(a)
+    ap.add_dyn_value('grp', '-g', desc="set grp values")
+    # parse arg list
+    args = a.parse_args("-g bla=12,foo=b".split())
+    ok = ap.parse(s, c, pl, args)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    cfg = c.get_cfg_set()
+    assert cfg == {'grp': {'bla': 12, 'foo': 'b'}}
+
+def test_config_args_dyn_value_error():
+    s = create_config_set()
+    c = ConfigCreator()
+    pl = PreLogger()
+    a = argparse.ArgumentParser()
+    ap = ConfigArgsParser(a)
+    ap.add_dyn_value('grp', '-g', desc="set grp values")
+    # syntax error in arg list
+    args = a.parse_args("-g b".split())
+    ok = ap.parse(s, c, pl, args)
+    assert not ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 1
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    # syntax error in arg list
+    args = a.parse_args("-g bla=12,foo=b,".split())
+    ok = ap.parse(s, c, pl, args)
+    assert not ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 2
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    # syntax error in arg list
+    args = a.parse_args("-g bla=12=3,foo=b,".split())
+    ok = ap.parse(s, c, pl, args)
+    assert not ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 3
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+
+def test_config_args_dyn_value_val_key():
+    s = create_config_set()
+    c = ConfigCreator()
+    pl = PreLogger()
+    a = argparse.ArgumentParser()
+    ap = ConfigArgsParser(a)
+    ap.add_dyn_value('grp', '-g', desc="set grp values", val_keys=[ConfigKey("bla")])
+    # valid key
+    args = a.parse_args("-g bla=12".split())
+    ok = ap.parse(s, c, pl, args)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    cfg = c.get_cfg_set()
+    assert cfg == {'grp': {'bla': 12}}
+    # invalid key
+    args = a.parse_args("-g foo=b".split())
+    ok = ap.parse(s, c, pl, args)
+    assert not ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 1
+    assert pl.get_num_msgs(logging.CRITICAL) == 0

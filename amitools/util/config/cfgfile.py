@@ -22,7 +22,7 @@ class ConfigFileParser(object):
         """
         self.legacy_opt[(old_sect, old_opt)] = (new_sect, new_opt)
 
-    def parse(self, cfg_set, creator, logger):
+    def parse(self, cfg_set, creator, logger, args=None):
         cfg = configparser.ConfigParser()
         cfg.optionxform = str  # do not case convert
 
@@ -56,30 +56,5 @@ class ConfigFileParser(object):
                            " please use '%s.%s' now!",
                            self.cfg_file, old_so[0], old_so[1], sect, opt)
 
-        # find associated group
-        key_grp = cfg_set.match_key(sect)
-        if key_grp is None:
-            # section not found!
-            logger.warning("%s: invalid section '%s'",
-                           self.cfg_file, sect)
-        else:
-            grp = key_grp[1]
-            # find associated option
-            key_val = grp.match_key(opt)
-            if key_val is None:
-                # option not found!
-                logger.warning(
-                    "%s: invalid option '%s.%s'",
-                    self.cfg_file, sect, opt)
-            else:
-                val = key_val[1]
-                # parse option value
-                try:
-                    out_val = val.parse_value(in_val)
-                    # store in result
-                    creator.set_entry(sect, opt, out_val)
-                except ValueError as e:
-                    logger.error("%s: failed parsing '%s.%s': %s",
-                                 self.cfg_file, sect, opt, e)
-                    return False
-        return True
+        return creator.parse_entry(self.cfg_file, cfg_set, logger,
+                                   sect, opt, in_val)
