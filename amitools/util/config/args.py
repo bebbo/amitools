@@ -31,13 +31,14 @@ class DynValueArgParser(object):
             return True
         # parse pairs
         for p in pairs:
-            e = p.split(self.key_sep)
-            if len(e) != 2:
+            pos = p.find(self.key_sep)
+            if pos == -1:
                 logger.error("args: invalid key, value pair: '%s'", p)
                 return False
-            key, val = e
+            key = p[:pos]
+            val = p[pos+1:]
             # check if key is valid
-            ok = self._check_val_keys(key)
+            ok = self._check_keys(key, self.val_keys)
             if not ok:
                 logger.error("args: invalid key given: '%s'", key)
                 return False
@@ -48,16 +49,43 @@ class DynValueArgParser(object):
                 return False
         return True
 
-    def _check_val_keys(self, name):
+    def _check_keys(self, name, val_keys):
         # no check done
-        if self.val_keys is None:
+        if val_keys is None:
             return True
         # check keys
-        for key in self.val_keys:
+        for key in val_keys:
             if key.match_key(name):
                 return True
         # no match
         return False
+
+
+class DynGroupArgParser(DynValueArgParser):
+
+    def __init__(self, grp_keys, val_keys, val_sep, key_sep, grp_sep):
+        self.grp_keys = grp_keys
+        self.val_keys = val_keys
+        self.val_sep = ',' if val_sep is None else val_sep
+        self.key_sep = '=' if key_sep is None else key_sep
+        self.grp_sep = ':' if grp_sep is None else grp_sep
+
+    def parse(self, cfg_set, creator, logger, in_val):
+        # split group name from in_val
+        pos = in_val.find(self.grp_sep)
+        if pos == -1:
+            logger.error("args: no group name given: '%s'", in_val)
+            return False
+        grp_name = in_val[:pos]
+        rem_val = in_val[pos+1:]
+        # check group name
+        ok = self._check_keys(grp_name, self.grp_keys)
+        if not ok:
+            logger.error("args: invalid group name given: '%s'", grp_name)
+            return False
+        # parse key, values in this group
+        return self._parse_pairs(cfg_set, creator, logger, rem_val,
+                                 grp_name)
 
 
 class ConfigArgsParser(object):
@@ -73,16 +101,14 @@ class ConfigArgsParser(object):
         self.aparser = aparser
         self.entries = {}
 
-    def _add_arg(self, arg_name, long_arg_name, desc):
+    def _add_arg(self, arg_name, long_arg_name, desc, **kwargs):
         # build args
         args = [arg_name]
         if long_arg_name is not None:
             args.append(long_arg_name)
         # build kwargs
         arg_var, need_dest = self._get_arg_var(arg_name, long_arg_name)
-        kwargs = {
-            'help': desc
-        }
+        kwargs['help'] = desc
         if need_dest:
             kwargs['dest'] = arg_var
         # add argparse argument
@@ -103,6 +129,39 @@ class ConfigArgsParser(object):
                 return arg_name[1], True
             else:
                 raise ValueError("invalid arg_name: " + arg_name)
+
+    def add_bool_value(self, grp_name, val_name, arg_name,
+                       long_arg_name=None, desc=None, default=False,
+                       const=None):
+        """create an option argument that maps to a bool value.
+
+        By default the value is set to ``False`` if arg is missing or set to
+        ``True``if arg was found. Adjust ``default``value to change this
+        behaviour.
+
+        Args:
+            grp_name (str): group name of value
+            val_name (str): name of value in group
+            arg_name (str): argument name for argparse, e.g. ``-a``
+            long_arg_name (str, optional): long argument name, e.g. ``--foo``
+            desc (str): argument description
+            default (bool): value if arg is not set
+            const (any): store this value if argument is set
+        """
+        # store action?
+        if const is None:
+            action = 'store_true' if not default else 'store_false'
+            arg_var = self._add_arg(arg_name, long_arg_name, desc,
+                                    default=default, action=action)
+        else:
+            action = 'store_const'
+            arg_var = self._add_arg(arg_name, long_arg_name, desc,
+                                    default=default, action=action,
+                                    const=const)
+        # create argument
+        # add parser
+        p = ValueArgParser(grp_name, val_name)
+        self.entries[arg_var] = p
 
     def add_value(self, grp_name, val_name, arg_name, long_arg_name=None,
                   desc=None):
@@ -145,10 +204,28 @@ class ConfigArgsParser(object):
         p = DynValueArgParser(grp_name, val_keys, val_sep, key_sep)
         self.entries[arg_var] = p
 
-    def add_dyn_group(self, grp_keys, val_key, arg_name, long_arg_name=None,
-                      val_sep=None, key_sep=None, grp_sep=None):
-        """allows you to specify one or multiple values in a set of groups"""
-        pass
+    def add_dyn_group(self, grp_keys, arg_name, long_arg_name=None,
+                      val_keys=None, desc=None, val_sep=None, key_sep=None,
+                      grp_sep=None):
+        """allows you to specify one or multiple values in a set of groups.
+
+        You specify an argument with a group name prefix first and then a
+        list of key value pairs in this group. E.g. ``group:key=value``.
+
+        Args:
+            grp_keys ([ConfigKey]): allowed groups to be set
+            arg_name (str): argument name for argparse
+            long_arg_name (str, optional): long argument name, e.g. ``--foo``
+            val_keys ([ConfigKey], optional): list of keys to allow
+            desc (str): argument description
+            val_sep (str, optional): char to separate values, default: ``,``
+            key_sep (str, optional): char to separate key and value, ``=``
+            grp_sep (str, optional): char to postfix group, ``:``
+        """
+        arg_var = self._add_arg(arg_name, long_arg_name, desc)
+        # add parser
+        p = DynGroupArgParser(grp_keys, val_keys, val_sep, key_sep, grp_sep)
+        self.entries[arg_var] = p
 
     def parse(self, cfg_set, creator, logger, args):
         """perform the parse and config set generation.
