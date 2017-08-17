@@ -4,6 +4,7 @@ from amitools.util.prelog import PreLogger
 from io import StringIO
 import logging
 import argparse
+import tempfile
 
 # ----- values
 
@@ -323,7 +324,124 @@ blob=12
     assert cfg == {'grp': {'bla': 12}}
 
 
+def test_config_file_mgr_check_def():
+    cfm = ConfigFileManager("baz")
+    assert cfm.get_default_config_name() == ".bazrc"
+    assert cfm.get_default_global_config_file() == "~/.bazrc"
+    assert cfm.get_default_local_config_file() == ".bazrc"
+
+
+def test_config_file_mgr_default():
+    c = ConfigCreator()
+    s = create_config_set()
+    # g_cfg
+    g_cfg = u"""
+[grp]
+bla=12
+foo=c
+"""
+    g_cfg_fobj = StringIO(g_cfg)
+    # l_cfg
+    l_cfg = u"""
+[grp]
+foo=b
+"""
+    l_cfg_fobj = StringIO(l_cfg)
+    # setup manager
+    cfm = ConfigFileManager("baz")
+    cfm.set_global_config_file("g", g_cfg_fobj)
+    cfm.set_local_config_file("l", l_cfg_fobj)
+    pl = PreLogger()
+    ok = cfm.parse(s, c, pl)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    cfg = c.get_cfg_set()
+    assert cfg == {'grp': {'bla': 12, 'foo': 'b'}}
+
+
+def test_config_file_mgr_skip_global():
+    c = ConfigCreator()
+    s = create_config_set()
+    # g_cfg
+    g_cfg = u"""
+[grp]
+bla=12
+"""
+    g_cfg_fobj = StringIO(g_cfg)
+    # l_cfg
+    l_cfg = u"""
+[grp]
+foo=b
+"""
+    l_cfg_fobj = StringIO(l_cfg)
+    # setup manager
+    cfm = ConfigFileManager("baz")
+    cfm.set_global_config_file("g", g_cfg_fobj)
+    cfm.set_local_config_file("l", l_cfg_fobj)
+    # arg parse setup
+    a = argparse.ArgumentParser()
+    cfm.add_skip_global_config_arg(a)
+    # parse args: skip global
+    args = a.parse_args("-S".split())
+    pl = PreLogger()
+    ok = cfm.parse(s, c, pl, args)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    # check that no globals are read
+    cfg = c.get_cfg_set()
+    assert cfg == {'grp': {'foo': 'b'}}
+
+
+def test_config_file_mgr_set_config_file():
+    c = ConfigCreator()
+    s = create_config_set()
+    # g_cfg
+    g_cfg = u"""
+[grp]
+bla=12
+"""
+    g_cfg_fobj = StringIO(g_cfg)
+    # l_cfg
+    l_cfg = u"""
+[grp]
+foo=b
+"""
+    l_cfg_fobj = StringIO(l_cfg)
+    # my local config file
+    myf = tempfile.NamedTemporaryFile(mode='w', delete=False)
+    myname = myf.name
+    myf.write(u"""
+[grp]
+foo=c
+""")
+    myf.close()
+    # setup manager
+    cfm = ConfigFileManager("baz")
+    cfm.set_global_config_file("g", g_cfg_fobj)
+    cfm.set_local_config_file("l", l_cfg_fobj)
+    # arg parse setup
+    a = argparse.ArgumentParser()
+    cfm.add_select_local_config_arg(a)
+    # parse args: set config file
+    args = a.parse_args("-c {}".format(myname).split())
+    pl = PreLogger()
+    ok = cfm.parse(s, c, pl, args)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    # check that no globals are read
+    cfg = c.get_cfg_set()
+    assert cfg == {'grp': {'bla':12, 'foo': 'c'}}
+    # cleanup temp file
+    os.remove(myname)
+
 # ----- config args
+
 
 def test_config_args_value_switch():
     s = create_config_set()
