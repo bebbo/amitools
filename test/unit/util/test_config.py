@@ -208,11 +208,9 @@ def test_config_set_key():
 
 def test_creator():
     c = ConfigCreator()
-    c.set_entry("grp", "key", 42)
+    c._set_entry("grp", "key", 42)
     assert c.get_cfg_set() == {"grp": {"key": 42}}
 
-
-# ----- config file
 
 def create_config_set():
     s = ConfigSet()
@@ -228,6 +226,49 @@ def create_config_set():
     g.add_value(v4)
     return s
 
+# ----- config dict
+
+
+def test_config_dict_ok():
+    s = create_config_set()
+    d = {
+        'grp': {
+            'foo': 'b',
+            'bla': 12
+        }
+    }
+    dp = ConfigDictParser(d)
+    c = ConfigCreator()
+    pl = PreLogger()
+    ok = dp.parse(s, c, pl)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    cfg = c.get_cfg_set()
+    assert cfg == {'grp': {'bla': 12, 'foo': 'b'}}
+
+
+def test_config_dict_error():
+    s = create_config_set()
+    d = {
+        'grp': {
+            'foo': 'b',
+            'bla': 12
+        }
+    }
+    dp = ConfigDictParser(d)
+    c = ConfigCreator()
+    pl = PreLogger()
+    ok = dp.parse(s, c, pl)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    cfg = c.get_cfg_set()
+    assert cfg == {'grp': {'bla': 12, 'foo': 'b'}}
+
+# ----- config file
 
 def test_config_file_parser():
     c = ConfigCreator()
@@ -436,7 +477,7 @@ foo=c
     assert pl.get_num_msgs(logging.CRITICAL) == 0
     # check that no globals are read
     cfg = c.get_cfg_set()
-    assert cfg == {'grp': {'bla':12, 'foo': 'c'}}
+    assert cfg == {'grp': {'bla': 12, 'foo': 'c'}}
     # cleanup temp file
     os.remove(myname)
 

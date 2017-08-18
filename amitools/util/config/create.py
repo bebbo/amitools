@@ -14,7 +14,7 @@ class ConfigCreator(object):
             self.config[name] = grp
             return grp
 
-    def set_entry(self, grp_name, val_name, val):
+    def _set_entry(self, grp_name, val_name, val):
         grp = self._add_group(grp_name)
         grp[val_name] = val
 
@@ -40,7 +40,7 @@ class ConfigCreator(object):
                 try:
                     out_val = val.parse_value(in_val)
                     # store in result
-                    self.set_entry(grp_name, val_name, out_val)
+                    self._set_entry(grp_name, val_name, out_val)
                 except ValueError as e:
                     logger.error("%s: failed parsing '%s.%s': %s",
                                  cfg_file, grp_name, val_name, e)
