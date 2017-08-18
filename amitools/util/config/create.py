@@ -14,11 +14,23 @@ class ConfigCreator(object):
             self.config[name] = grp
             return grp
 
-    def _set_entry(self, grp_name, val_name, val):
-        grp = self._add_group(grp_name)
+    def _set_entry(self, key_grp, grp_name, key_val, val_name, val):
+        # group by key?
+        if key_grp[0].do_group_by_key():
+            # add a top-level group with grp_key name
+            top_grp = self._add_group(key_grp[1].get_name())
+            # add custom group
+            if grp_name in top_grp:
+                grp = top_grp[grp_name]
+            else:
+                grp = {}
+                top_grp[grp_name] = grp
+        else:
+            grp = self._add_group(grp_name)
         grp[val_name] = val
 
-    def parse_entry(self, cfg_file, cfg_set, logger, grp_name, val_name, in_val):
+    def parse_entry(self, cfg_file, cfg_set, logger,
+                    grp_name, val_name, in_val):
         # find associated group
         key_grp = cfg_set.match_key(grp_name)
         if key_grp is None:
@@ -40,10 +52,10 @@ class ConfigCreator(object):
                 try:
                     out_val = val.parse_value(in_val)
                     # store in result
-                    self._set_entry(grp_name, val_name, out_val)
+                    self._set_entry(key_grp, grp_name, key_val, val_name,
+                                    out_val)
                 except ValueError as e:
                     logger.error("%s: failed parsing '%s.%s': %s",
                                  cfg_file, grp_name, val_name, e)
                     return False
         return True
-

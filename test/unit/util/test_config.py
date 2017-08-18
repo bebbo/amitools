@@ -213,14 +213,9 @@ def test_config_set_key():
 # ----- creator
 
 
-def test_creator():
-    c = ConfigCreator()
-    c._set_entry("grp", "key", 42)
-    assert c.get_cfg_set() == {"grp": {"key": 42}}
-
-
-def create_config_set():
+def create_config_set(group_by_key=False):
     s = ConfigSet()
+    # fix group
     g = ConfigGroup("grp")
     s.add_group(g)
     v = ConfigIntValue("bla", 0)
@@ -231,7 +226,22 @@ def create_config_set():
     g.add_value(v3)
     v4 = ConfigBoolValue("b2", True)
     g.add_value(v4)
+    # dyn group
+    g2 = ConfigGroup("multi")
+    g2k = ConfigKeyGlob("lib", "*.lib", group_by_key=group_by_key)
+    s.add_key_group(g2k, g2)
+    v5 = ConfigIntValue("baz", 21)
+    g2.add_value(v5)
     return s
+
+
+def test_creator():
+    s = create_config_set()
+    c = ConfigCreator()
+    pl = PreLogger()
+    ok = c.parse_entry("bla", s, pl, "grp", "bla", 12)
+    assert ok
+    assert c.get_cfg_set() == {"grp": {"bla": 12}}
 
 # ----- config dict
 
@@ -274,6 +284,51 @@ def test_config_dict_error():
     assert pl.get_num_msgs(logging.CRITICAL) == 0
     cfg = c.get_cfg_set()
     assert cfg == {'grp': {'bla': 12, 'foo': 'b'}}
+
+
+def test_config_dict_multi():
+    s = create_config_set()
+    d = {
+        'a.lib': {
+            'baz': 7
+        },
+        'bla.lib': {
+            'baz': 13
+        }
+    }
+    dp = ConfigDictParser(d)
+    c = ConfigCreator()
+    pl = PreLogger()
+    ok = dp.parse(s, c, pl)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    cfg = c.get_cfg_set()
+    assert cfg == {'a.lib': {'baz': 7}, 'bla.lib': {'baz': 13}}
+
+
+def test_config_dict_multi_group():
+    s = create_config_set(group_by_key=True)
+    d = {
+        'a.lib': {
+            'baz': 7
+        },
+        'bla.lib': {
+            'baz': 13
+        }
+    }
+    dp = ConfigDictParser(d)
+    c = ConfigCreator()
+    pl = PreLogger()
+    ok = dp.parse(s, c, pl)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    cfg = c.get_cfg_set()
+    assert cfg == {'multi': {'a.lib': {'baz': 7}, 'bla.lib': {'baz': 13}}}
+
 
 # ----- config file
 
