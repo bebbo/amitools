@@ -32,7 +32,7 @@ class ConfigBaseValue(object):
     def get_default(self):
         return self.default
 
-    def parse_value(self, v):
+    def parse_value(self, v, old_val=None):
         v = self._conv_value(v)
         self._check_value(v)
         return v
@@ -204,16 +204,19 @@ class ConfigEnumValue(ConfigStringValue):
 class ConfigValueList(ConfigBaseValue):
 
     def __init__(self, name, entry_cfg, default=None, description=None,
-                 entry_sep=None):
+                 entry_sep=None, append_prefix=None):
         self.entry_cfg = entry_cfg
         if entry_sep is None:
             entry_sep = ','
+        if append_prefix is None:
+            append_prefix = '+'
         if default is None:
             default = []
         self.entry_sep = entry_sep
+        self.append_prefix = append_prefix
         super(ConfigValueList, self).__init__(name, default, list, description)
 
-    def parse_value(self, v):
+    def parse_value(self, v, old_val=None):
         """parse a list entry.
 
         Either give an empty list with None, a list or tuple to parse the
@@ -221,6 +224,9 @@ class ConfigValueList(ConfigBaseValue):
 
         The string will be split with ``entry_sep`` and then parsed.
 
+        Args:
+            v (any): value to be parsed as a list. either list or str
+            old_val (list, optional): old list (may be appended) or None
         Returns:
             list    a list of parsed values
         Raises:
@@ -232,5 +238,15 @@ class ConfigValueList(ConfigBaseValue):
             return list(map(self.entry_cfg.parse_value, v))
         else:
             s = str(v)
+            append = False
+            # append prefix?
+            if len(s) > 0 and s.startswith(self.append_prefix):
+                s = s[len(self.append_prefix):]
+                append = True
             entries = s.split(self.entry_sep)
-            return list(map(self.entry_cfg.parse_value, entries))
+            res = list(map(self.entry_cfg.parse_value, entries))
+            # append to old list
+            if append and old_val is not None:
+                return old_val + res
+            else:
+                return res

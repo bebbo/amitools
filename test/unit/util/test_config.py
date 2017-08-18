@@ -111,6 +111,13 @@ def test_config_val_list():
     assert vl.parse_value(["a", "b"]) == ["a", "b"]
     assert vl.parse_value("a,b") == ["a", "b"]
 
+
+def test_config_val_list_append():
+    v = ConfigStringValue("a_val", "")
+    vl = ConfigValueList("a_list", v)
+    assert vl.parse_value("+a,b") == ["a", "b"]
+    assert vl.parse_value("+a,b", ["c"]) == ["c", "a", "b"]
+
 # ----- keys
 
 
@@ -269,6 +276,7 @@ def test_config_dict_error():
     assert cfg == {'grp': {'bla': 12, 'foo': 'b'}}
 
 # ----- config file
+
 
 def test_config_file_parser():
     c = ConfigCreator()
