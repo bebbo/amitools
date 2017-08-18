@@ -817,3 +817,45 @@ def test_config_args_dyn_group_error():
     assert pl.get_num_msgs(logging.WARNING) == 0
     assert pl.get_num_msgs(logging.ERROR) == 2
     assert pl.get_num_msgs(logging.CRITICAL) == 0
+
+
+# ----- MainParser
+
+def test_config_main_parser_ok():
+    s = create_config_set()
+    d = {
+        'grp': {
+            'bla': 10
+        }
+    }
+    c = ConfigMainParser(s, d, prog="bluna")
+    # pimp file cfg
+    # g_cfg
+    g_cfg = u"""
+[grp]
+foo=a
+"""
+    g_cfg_fobj = StringIO(g_cfg)
+    # l_cfg
+    l_cfg = u"""
+[grp]
+foo=b
+"""
+    l_cfg_fobj = StringIO(l_cfg)
+    # setup manager
+    cfm = c.get_cfg_file_parser()
+    assert cfm.get_default_config_name() == ".blunarc"
+    cfm.set_global_config_file("g", g_cfg_fobj)
+    cfm.set_local_config_file("l", l_cfg_fobj)
+    # setup args
+    ap = c.get_cfg_arg_parser()
+    gk = ConfigKey('grp')
+    ap.add_dyn_group([gk], '-g', desc="set grp values")
+    # parse args
+    ok = c.parse("-g grp:bla=12".split())
+    assert ok
+    pl = c.get_pre_logger()
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    assert c.get_cfg_dict() == {'grp': {'bla': 12, 'foo': 'b'}}
