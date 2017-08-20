@@ -12,17 +12,17 @@ class ConfigKey(object):
         case (bool, optional): compare name case (in)sensitive
     """
 
-    def __init__(self, name, case=False, group_by_key=False):
+    def __init__(self, name, case=False, group_by_name=None):
         self.name = name
         self.case = case
-        self.group_by_key = group_by_key
+        self.group_by_name = group_by_name
 
     def __eq__(self, other):
         """compare a key by its name only."""
         return self.name == other.name
 
-    def do_group_by_key(self):
-        return self.group_by_key
+    def do_group_by_name(self):
+        return self.group_by_name
 
     def get_name(self):
         return self.name
@@ -53,8 +53,8 @@ class ConfigKeyList(ConfigKey):
         case (bool): case sensitive match
     """
 
-    def __init__(self, name, keys, case=False, group_by_key=False):
-        super(ConfigKeyList, self).__init__(name, case, group_by_key)
+    def __init__(self, name, keys, case=False, group_by_name=False):
+        super(ConfigKeyList, self).__init__(name, case, group_by_name)
         self.keys = keys
 
     def match_key(self, key):
@@ -73,8 +73,8 @@ class ConfigKeyGlob(ConfigKey):
         case (bool): case sensitive match
     """
 
-    def __init__(self, name, glob, case=False, group_by_key=False):
-        super(ConfigKeyGlob, self).__init__(name, case, group_by_key)
+    def __init__(self, name, glob, case=False, group_by_name=False):
+        super(ConfigKeyGlob, self).__init__(name, case, group_by_name)
         if case:
             self.glob = glob
         else:
@@ -96,8 +96,8 @@ class ConfigKeyRegEx(ConfigKey):
         case (bool): case sensitve match
     """
 
-    def __init__(self, name, regex, case=False, group_by_key=False):
-        super(ConfigKeyRegEx, self).__init__(name, case, group_by_key)
+    def __init__(self, name, regex, case=False, group_by_name=False):
+        super(ConfigKeyRegEx, self).__init__(name, case, group_by_name)
         self.regex = regex
         self.prog = re.compile(regex, 0 if case else re.IGNORECASE)
 

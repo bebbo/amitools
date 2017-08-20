@@ -213,7 +213,7 @@ def test_config_set_key():
 # ----- creator
 
 
-def create_config_set(group_by_key=False):
+def create_config_set(group_by_name=None):
     s = ConfigSet()
     # fix group
     g = ConfigGroup()
@@ -228,7 +228,7 @@ def create_config_set(group_by_key=False):
     g.add_value("b2", v4)
     # dyn group
     g2 = ConfigGroup()
-    g2k = ConfigKeyGlob("lib", "*.lib", group_by_key=group_by_key)
+    g2k = ConfigKeyGlob("lib", "*.lib", group_by_name=group_by_name)
     s.add_key_group(g2k, g2)
     v5 = ConfigIntValue(21)
     g2.add_value("baz", v5)
@@ -309,7 +309,7 @@ def test_config_dict_multi():
 
 
 def test_config_dict_multi_group():
-    s = create_config_set(group_by_key=True)
+    s = create_config_set(group_by_name="lib")
     d = {
         'a.lib': {
             'baz': 7
