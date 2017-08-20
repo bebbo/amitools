@@ -6,15 +6,19 @@ from .key import ConfigKey
 class ConfigEntry(object):
     """a config entry combines a key with a value"""
 
-    def __init__(self, key, val):
+    def __init__(self, key, val, group_by_name=None):
         self.key = key
         self.val = val
+        self.group_by_name = group_by_name
 
     def get_key(self):
         return self.key
 
     def get_value(self):
         return self.val
+
+    def get_group_by_name(self):
+        return self.group_by_name
 
 
 class ConfigGroup(object):
@@ -63,12 +67,12 @@ class ConfigSet(object):
             raise ValueError("entry must be a ConfigGroup")
         self.groups.append(entry)
 
-    def add_group(self, name, grp):
+    def add_group(self, name, grp, group_by_name=None):
         key = ConfigKey(name)
-        return self.add_key_group(key, grp)
+        return self.add_key_group(key, grp, group_by_name)
 
-    def add_key_group(self, key, grp):
-        entry = ConfigEntry(key, grp)
+    def add_key_group(self, key, grp, group_by_name=None):
+        entry = ConfigEntry(key, grp, group_by_name)
         self.groups.append(entry)
         return entry
 

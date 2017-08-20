@@ -6,12 +6,8 @@ import re
 
 class ConfigKeyBase(object):
 
-    def __init__(self, case=False, group_by_name=None):
+    def __init__(self, case=False):
         self.case = case
-        self.group_by_name = group_by_name
-
-    def do_group_by_name(self):
-        return self.group_by_name
 
     def _match_str(self, a, b):
         if self.case:
@@ -28,8 +24,8 @@ class ConfigKey(ConfigKeyBase):
         case (bool, optional): compare name case (in)sensitive
     """
 
-    def __init__(self, key, case=False, group_by_name=None):
-        super(ConfigKey, self).__init__(case, group_by_name)
+    def __init__(self, key, case=False):
+        super(ConfigKey, self).__init__(case)
         self.key = key
 
     def get_key(self):
@@ -55,8 +51,8 @@ class ConfigKeyList(ConfigKeyBase):
         case (bool): case sensitive match
     """
 
-    def __init__(self, keys, case=False, group_by_name=False):
-        super(ConfigKeyList, self).__init__(case, group_by_name)
+    def __init__(self, keys, case=False):
+        super(ConfigKeyList, self).__init__(case)
         self.keys = keys
 
     def match_key(self, key):
@@ -75,8 +71,8 @@ class ConfigKeyGlob(ConfigKeyBase):
         case (bool): case sensitive match
     """
 
-    def __init__(self, glob, case=False, group_by_name=False):
-        super(ConfigKeyGlob, self).__init__(case, group_by_name)
+    def __init__(self, glob, case=False):
+        super(ConfigKeyGlob, self).__init__(case)
         if case:
             self.glob = glob
         else:
@@ -98,8 +94,8 @@ class ConfigKeyRegEx(ConfigKeyBase):
         case (bool): case sensitve match
     """
 
-    def __init__(self, regex, case=False, group_by_name=False):
-        super(ConfigKeyRegEx, self).__init__(case, group_by_name)
+    def __init__(self, regex, case=False):
+        super(ConfigKeyRegEx, self).__init__(case)
         self.regex = regex
         self.prog = re.compile(regex, 0 if case else re.IGNORECASE)
 

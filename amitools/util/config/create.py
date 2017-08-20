@@ -16,7 +16,7 @@ class ConfigCreator(object):
 
     def _set_entry(self, grp_entry, grp_name, val_entry, val_name, val):
         # group by key?
-        group_by_name = grp_entry.get_key().do_group_by_name()
+        group_by_name = grp_entry.get_group_by_name()
         if group_by_name is not None:
             # add a top-level group with grp_key name
             top_grp = self._add_group(group_by_name)

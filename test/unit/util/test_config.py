@@ -236,8 +236,8 @@ def create_config_set(group_by_name=None):
     g.add_value("b2", v4)
     # dyn group
     g2 = ConfigGroup()
-    g2k = ConfigKeyGlob("*.lib", group_by_name=group_by_name)
-    s.add_key_group(g2k, g2)
+    g2k = ConfigKeyGlob("*.lib")
+    s.add_key_group(g2k, g2, group_by_name)
     v5 = ConfigIntValue(21)
     g2.add_value("baz", v5)
     return s
