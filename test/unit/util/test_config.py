@@ -136,35 +136,35 @@ def test_config_key_name_case():
 
 
 def test_config_key_list():
-    k = ConfigKeyList("a", ["b", "c", "d"])
+    k = ConfigKeyList(["b", "c", "d"])
     assert k.match_key("b")
     assert k.match_key("C")
     assert not k.match_key("a")
 
 
 def test_config_key_list_case():
-    k = ConfigKeyList("a", ["b", "c", "d"], case=True)
+    k = ConfigKeyList(["b", "c", "d"], case=True)
     assert k.match_key("b")
     assert not k.match_key("C")
     assert not k.match_key("a")
 
 
 def test_config_key_glob():
-    k = ConfigKeyGlob("a", "*.lib")
+    k = ConfigKeyGlob("*.lib")
     assert k.match_key("h.lib")
     assert k.match_key("B.lIb")
     assert not k.match_key("h.libi")
 
 
 def test_config_key_glob_case():
-    k = ConfigKeyGlob("a", "*.lib", case=True)
+    k = ConfigKeyGlob("*.lib", case=True)
     assert k.match_key("h.lib")
     assert not k.match_key("B.lIb")
     assert not k.match_key("h.libi")
 
 
 def test_config_key_regex():
-    k = ConfigKeyRegEx("a", "a.*z")
+    k = ConfigKeyRegEx("a.*z")
     assert k.match_key("abz")
     assert k.match_key("AbZ")
     assert not k.match_key("abzl")
@@ -172,7 +172,7 @@ def test_config_key_regex():
 
 
 def test_config_key_regex_case():
-    k = ConfigKeyRegEx("a", "a.*z", case=True)
+    k = ConfigKeyRegEx("a.*z", case=True)
     assert k.match_key("abz")
     assert not k.match_key("AbZ")
     assert not k.match_key("abzl")
@@ -185,13 +185,15 @@ def test_config_group():
     g = ConfigGroup()
     v = ConfigIntValue(0)
     g.add_value("a_int", v)
-    assert g.match_key("a_int") == (ConfigKey("a_int"), v)
+    kr, vr = g.match_key("a_int")
+    assert kr.get_key() == "a_int"
+    assert vr == v
 
 
 def test_config_group_key():
     g = ConfigGroup()
     v = ConfigIntValue(0)
-    k = ConfigKeyList("a", ["b", "c", "d"], case=True)
+    k = ConfigKeyList(["b", "c", "d"], case=True)
     g.add_key_value(k, v)
     assert g.match_key("b") == (k, v)
 
@@ -200,13 +202,15 @@ def test_config_set():
     s = ConfigSet()
     g = ConfigGroup()
     s.add_group("grp", g)
-    assert s.match_key("grp") == (ConfigKey("grp"), g)
+    kr, vr = s.match_key("grp")
+    assert kr.get_key() == "grp"
+    assert vr == g
 
 
 def test_config_set_key():
     s = ConfigSet()
     g = ConfigGroup()
-    k = ConfigKeyList("a", ["b", "c", "d"], case=True)
+    k = ConfigKeyList(["b", "c", "d"], case=True)
     s.add_key_group(k, g)
     assert s.match_key("b") == (k, g)
 
@@ -228,7 +232,7 @@ def create_config_set(group_by_name=None):
     g.add_value("b2", v4)
     # dyn group
     g2 = ConfigGroup()
-    g2k = ConfigKeyGlob("lib", "*.lib", group_by_name=group_by_name)
+    g2k = ConfigKeyGlob("*.lib", group_by_name=group_by_name)
     s.add_key_group(g2k, g2)
     v5 = ConfigIntValue(21)
     g2.add_value("baz", v5)
@@ -322,6 +326,7 @@ def test_config_dict_multi_group():
     c = ConfigCreator()
     pl = PreLogger()
     ok = dp.parse(s, c, pl)
+    print(pl.get_log_msgs())
     assert ok
     assert pl.get_num_msgs(logging.WARNING) == 0
     assert pl.get_num_msgs(logging.ERROR) == 0
