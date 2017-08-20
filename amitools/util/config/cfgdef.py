@@ -10,17 +10,12 @@ class ConfigGroup(object):
     By default the key is derived from the name of the value.
     """
 
-    def __init__(self, name):
-        self.name = name
+    def __init__(self):
         self.entries = []
 
-    def get_name(self):
-        return self.name
-
-    def add_value(self, val):
+    def add_value(self, name, val):
         """add a value by its name as a key.
         """
-        name = val.get_name()
         key = ConfigKey(name)
         return self.add_key_value(key, val)
 
@@ -48,8 +43,7 @@ class ConfigSet(object):
     def __init__(self):
         self.groups = []
 
-    def add_group(self, grp):
-        name = grp.get_name()
+    def add_group(self, name, grp):
         key = ConfigKey(name)
         return self.add_key_group(key, grp)
 

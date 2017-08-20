@@ -11,23 +11,13 @@ else:
 
 class ConfigBaseValue(object):
 
-    def __init__(self, name, default=None, val_type=None, description=None):
-        self.name = name
-        self.description = description
+    def __init__(self, default=None, val_type=None):
         self.val_type = val_type
         self.default = self.parse_value(default)
 
     def __repr__(self):
-        return "ConfigValue(name={}, default={}, val_type={}," \
-            " description={})" \
-            .format(self.name, self.default, self.val_type,
-                    self.description)
-
-    def get_name(self):
-        return self.name
-
-    def get_description(self):
-        return self.description
+        return "ConfigValue(default={}, val_type={})" \
+            .format(self.default, self.val_type)
 
     def get_default(self):
         return self.default
@@ -49,8 +39,8 @@ class ConfigBaseValue(object):
 
 class ConfigBoolValue(ConfigBaseValue):
 
-    def __init__(self, name, default=False, description=None):
-        super(ConfigBoolValue, self).__init__(name, default, bool, description)
+    def __init__(self, default=False):
+        super(ConfigBoolValue, self).__init__(default, bool)
 
     def _conv_value(self, v):
         if isinstance(v, str_type):
@@ -64,9 +54,9 @@ class ConfigBoolValue(ConfigBaseValue):
 
 class ConfigIntValue(ConfigBaseValue):
 
-    def __init__(self, name, default=0, int_range=None, description=None):
+    def __init__(self, default=0, int_range=None):
         self.int_range = int_range
-        super(ConfigIntValue, self).__init__(name, default, int, description)
+        super(ConfigIntValue, self).__init__(default, int)
 
     def _conv_value(self, v):
         if isinstance(v, str_type):
@@ -98,11 +88,9 @@ class ConfigIntValue(ConfigBaseValue):
 
 class ConfigSizeValue(ConfigIntValue):
 
-    def __init__(self, name, default=0, int_range=None, description=None,
-                 units=1024):
+    def __init__(self, default=0, int_range=None, units=1024):
         self.units = units
-        super(ConfigSizeValue, self).__init__(
-            name, default, int_range, description)
+        super(ConfigSizeValue, self).__init__(default, int_range)
 
     def _conv_value(self, v):
         scale = 1
@@ -132,10 +120,9 @@ class ConfigSizeValue(ConfigIntValue):
 
 class ConfigStringValue(ConfigBaseValue):
 
-    def __init__(self, name, default=None, description=None, allow_none=False):
+    def __init__(self, default=None, allow_none=False):
         self.allow_none = allow_none
-        super(ConfigStringValue, self).__init__(
-            name, default, str, description)
+        super(ConfigStringValue, self).__init__(default, str)
 
     def _conv_value(self, v):
         if self.allow_none and v is None:
@@ -152,11 +139,10 @@ class ConfigStringValue(ConfigBaseValue):
 
 class ConfigPathValue(ConfigStringValue):
 
-    def __init__(self, name, default=None, description=None,
-                 is_dir=False, must_exist=False):
+    def __init__(self, default=None, is_dir=False, must_exist=False):
         self.is_dir = is_dir
         self.must_exist = must_exist
-        super(ConfigPathValue, self).__init__(name, default, description)
+        super(ConfigPathValue, self).__init__(default)
 
     def _check_value(self, v):
         if self.must_exist:
@@ -179,7 +165,7 @@ class ConfigPathValue(ConfigStringValue):
 
 class ConfigEnumValue(ConfigStringValue):
 
-    def __init__(self, name, val_map, default, description=None):
+    def __init__(self, val_map, default):
         # convert list
         if type(val_map) in (list, tuple):
             d = {}
@@ -188,7 +174,7 @@ class ConfigEnumValue(ConfigStringValue):
             self.val_map = d
         else:
             self.val_map = val_map
-        super(ConfigEnumValue, self).__init__(name, default, description)
+        super(ConfigEnumValue, self).__init__(default)
 
     def _conv_value(self, v):
         if v in self.val_map:
@@ -203,7 +189,7 @@ class ConfigEnumValue(ConfigStringValue):
 
 class ConfigValueList(ConfigBaseValue):
 
-    def __init__(self, name, entry_cfg, default=None, description=None,
+    def __init__(self, entry_cfg, default=None,
                  entry_sep=None, append_prefix=None):
         self.entry_cfg = entry_cfg
         if entry_sep is None:
@@ -214,7 +200,7 @@ class ConfigValueList(ConfigBaseValue):
             default = []
         self.entry_sep = entry_sep
         self.append_prefix = append_prefix
-        super(ConfigValueList, self).__init__(name, default, list, description)
+        super(ConfigValueList, self).__init__(default, list)
 
     def parse_value(self, v, old_val=None):
         """parse a list entry.

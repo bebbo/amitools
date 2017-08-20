@@ -18,7 +18,7 @@ class ConfigCreator(object):
         # group by key?
         if key_grp[0].do_group_by_key():
             # add a top-level group with grp_key name
-            top_grp = self._add_group(key_grp[1].get_name())
+            top_grp = self._add_group(key_grp[0].get_name())
             # add custom group
             if grp_name in top_grp:
                 grp = top_grp[grp_name]
