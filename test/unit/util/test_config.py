@@ -185,9 +185,9 @@ def test_config_group():
     g = ConfigGroup()
     v = ConfigIntValue(0)
     g.add_value("a_int", v)
-    kr, vr = g.match_key("a_int")
-    assert kr.get_key() == "a_int"
-    assert vr == v
+    e = g.match_key("a_int")
+    assert e.get_key().get_key() == "a_int"
+    assert e.get_value() == v
 
 
 def test_config_group_key():
@@ -195,16 +195,18 @@ def test_config_group_key():
     v = ConfigIntValue(0)
     k = ConfigKeyList(["b", "c", "d"], case=True)
     g.add_key_value(k, v)
-    assert g.match_key("b") == (k, v)
+    e = g.match_key("b")
+    assert e.get_key() == k
+    assert e.get_value() == v
 
 
 def test_config_set():
     s = ConfigSet()
     g = ConfigGroup()
     s.add_group("grp", g)
-    kr, vr = s.match_key("grp")
-    assert kr.get_key() == "grp"
-    assert vr == g
+    e = s.match_key("grp")
+    assert e.get_key().get_key() == "grp"
+    assert e.get_value() == g
 
 
 def test_config_set_key():
@@ -212,7 +214,9 @@ def test_config_set_key():
     g = ConfigGroup()
     k = ConfigKeyList(["b", "c", "d"], case=True)
     s.add_key_group(k, g)
-    assert s.match_key("b") == (k, g)
+    e = s.match_key("b")
+    assert e.get_key() == k
+    assert e.get_value() == g
 
 # ----- creator
 

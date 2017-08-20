@@ -3,6 +3,20 @@
 from .key import ConfigKey
 
 
+class ConfigEntry(object):
+    """a config entry combines a key with a value"""
+
+    def __init__(self, key, val):
+        self.key = key
+        self.val = val
+
+    def get_key(self):
+        return self.key
+
+    def get_value(self):
+        return self.val
+
+
 class ConfigGroup(object):
     """a config group combines a list of config entries.
 
@@ -13,24 +27,25 @@ class ConfigGroup(object):
     def __init__(self):
         self.entries = []
 
-    def add_value(self, name, val):
+    def add_entry(self, e):
         """add a value by its name as a key.
         """
+        self.entries.append(e)
+
+    def add_value(self, name, val):
         key = ConfigKey(name)
         return self.add_key_value(key, val)
 
     def add_key_value(self, key, val):
-        """add a config entry by giving its key and value.
-        """
-        key_val = (key, val)
-        self.entries.append(key_val)
-        return key_val
+        entry = ConfigEntry(key, val)
+        self.entries.append(entry)
+        return entry
 
     def match_key(self, name):
-        """find a key and return the associated (key, value) tuple or None.
+        """find a key and return the associated entry or None.
         """
         for e in self.entries:
-            key = e[0]
+            key = e.get_key()
             if key.match_key(name):
                 return e
         return None
@@ -43,20 +58,25 @@ class ConfigSet(object):
     def __init__(self):
         self.groups = []
 
+    def add_entry(self, entry):
+        if not isinstance(entry.get_value(), ConfigGroup):
+            raise ValueError("entry must be a ConfigGroup")
+        self.groups.append(entry)
+
     def add_group(self, name, grp):
         key = ConfigKey(name)
         return self.add_key_group(key, grp)
 
     def add_key_group(self, key, grp):
-        key_grp = (key, grp)
-        self.groups.append(key_grp)
-        return key_grp
+        entry = ConfigEntry(key, grp)
+        self.groups.append(entry)
+        return entry
 
     def match_key(self, name):
-        """find a key and return the associated (key, group) tuple or None.
+        """find a key and return the associated entry or None.
         """
-        for g in self.groups:
-            key = g[0]
+        for entry in self.groups:
+            key = entry.get_key()
             if key.match_key(name):
-                return g
+                return entry
         return None

@@ -14,9 +14,9 @@ class ConfigCreator(object):
             self.config[name] = grp
             return grp
 
-    def _set_entry(self, key_grp, grp_name, key_val, val_name, val):
+    def _set_entry(self, grp_entry, grp_name, val_entry, val_name, val):
         # group by key?
-        group_by_name = key_grp[0].do_group_by_name()
+        group_by_name = grp_entry.get_key().do_group_by_name()
         if group_by_name is not None:
             # add a top-level group with grp_key name
             top_grp = self._add_group(group_by_name)
@@ -33,27 +33,28 @@ class ConfigCreator(object):
     def parse_entry(self, cfg_file, cfg_set, logger,
                     grp_name, val_name, in_val):
         # find associated group
-        key_grp = cfg_set.match_key(grp_name)
-        if key_grp is None:
+        grp_entry = cfg_set.match_key(grp_name)
+        if grp_entry is None:
             # section not found!
             logger.warning("%s: invalid group '%s'",
                            cfg_file, grp_name)
         else:
-            grp = key_grp[1]
+            grp = grp_entry.get_value()
             # find associated option
-            key_val = grp.match_key(val_name)
-            if key_val is None:
+            val_entry = grp.match_key(val_name)
+            if val_entry is None:
                 # option not found!
                 logger.warning(
                     "%s: invalid value '%s.%s'",
                     cfg_file, grp_name, val_name)
             else:
-                val = key_val[1]
+                val = val_entry.get_value()
                 # parse option value
                 try:
                     out_val = val.parse_value(in_val)
                     # store in result
-                    self._set_entry(key_grp, grp_name, key_val, val_name,
+                    self._set_entry(grp_entry, grp_name,
+                                    val_entry, val_name,
                                     out_val)
                 except ValueError as e:
                     logger.error("%s: failed parsing '%s.%s': %s",
