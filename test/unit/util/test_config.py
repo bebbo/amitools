@@ -10,8 +10,7 @@ import tempfile
 
 
 def test_config_val_bool():
-    b = ConfigBoolValue(False)
-    assert b.get_default() == False
+    b = ConfigBoolValue()
     assert b.parse_value(True) == True
     assert b.parse_value(False) == False
     assert b.parse_value('YES') == True
@@ -28,8 +27,7 @@ def test_config_val_bool():
 
 
 def test_config_val_int():
-    v = ConfigIntValue(0)
-    assert v.get_default() == 0
+    v = ConfigIntValue()
     assert v.parse_value("10") == 10
     assert v.parse_value(42) == 42
     assert v.parse_value("0x10") == 16
@@ -44,7 +42,7 @@ def test_config_val_int():
 
 
 def test_config_val_int_range():
-    v = ConfigIntValue(0, int_range=(-10, 10))
+    v = ConfigIntValue(int_range=(-10, 10))
     assert v.parse_value(-10) == -10
     assert v.parse_value(10) == 10
     with pytest.raises(ValueError):
@@ -54,16 +52,14 @@ def test_config_val_int_range():
 
 
 def test_config_val_size():
-    v = ConfigSizeValue("2m")
-    assert v.get_default() == 2 * 1024 * 1024
+    v = ConfigSizeValue()
     assert v.parse_value("0x10ki") == 16 * 1024
     assert v.parse_value("$4g") == 4 * 1024 * 1024 * 1024
     assert v.parse_value(u"0x10ki") == 16 * 1024
 
 
 def test_config_val_str():
-    v = ConfigStringValue("hugo")
-    assert v.get_default() == "hugo"
+    v = ConfigStringValue()
     assert v.parse_value("hello") == "hello"
     assert v.parse_value(u"hello") == u"hello"
     with pytest.raises(ValueError):
@@ -75,15 +71,26 @@ def test_config_val_str():
 
 
 def test_config_val_str_none():
-    v = ConfigStringValue(None, allow_none=True)
-    assert v.get_default() is None
+    v = ConfigStringValue(allow_none=True)
     assert v.parse_value(None) is None
     assert v.parse_value("hello") is "hello"
 
 
+def test_config_val_regex():
+    v = ConfigRegExValue("a[bc].*d")
+    assert v.parse_value("abd")
+    assert v.parse_value("AbD")
+
+
+def test_config_val_regex_case():
+    v = ConfigRegExValue("a[bc].*d", case=True)
+    assert v.parse_value("abcd")
+    with pytest.raises(ValueError):
+        v.parse_value("AbCeFGd")
+
+
 def test_config_val_enum_list():
-    v = ConfigEnumValue(("a", "b", "c"), "a")
-    assert v.get_default() == "a"
+    v = ConfigEnumValue(("a", "b", "c"))
     assert v.parse_value("b") == "b"
     with pytest.raises(ValueError):
         v.parse_value("d")
@@ -92,8 +99,7 @@ def test_config_val_enum_list():
 
 
 def test_config_val_enum_map():
-    v = ConfigEnumValue({"a": 0, "b": 1, "c": 2}, 0)
-    assert v.get_default() == 0
+    v = ConfigEnumValue({"a": 0, "b": 1, "c": 2})
     assert v.parse_value("b") == 1
     assert v.parse_value(2) == 2
     with pytest.raises(ValueError):
@@ -103,9 +109,8 @@ def test_config_val_enum_map():
 
 
 def test_config_val_list():
-    v = ConfigStringValue("")
+    v = ConfigStringValue()
     vl = ConfigValueList(v)
-    assert vl.get_default() == []
     assert vl.parse_value(None) == []
     assert vl.parse_value([]) == []
     assert vl.parse_value(["a", "b"]) == ["a", "b"]
@@ -113,7 +118,7 @@ def test_config_val_list():
 
 
 def test_config_val_list_append():
-    v = ConfigStringValue("")
+    v = ConfigStringValue()
     vl = ConfigValueList(v)
     assert vl.parse_value("+a,b") == ["a", "b"]
     assert vl.parse_value("+a,b", ["c"]) == ["c", "a", "b"]
@@ -183,7 +188,7 @@ def test_config_key_regex_case():
 
 def test_config_group():
     g = ConfigGroup()
-    v = ConfigIntValue(0)
+    v = ConfigIntValue()
     g.add_value("a_int", v)
     e = g.match_key("a_int")
     assert e.get_key().get_key() == "a_int"
@@ -192,7 +197,7 @@ def test_config_group():
 
 def test_config_group_key():
     g = ConfigGroup()
-    v = ConfigIntValue(0)
+    v = ConfigIntValue()
     k = ConfigKeyList(["b", "c", "d"], case=True)
     g.add_key_value(k, v)
     e = g.match_key("b")
@@ -226,19 +231,19 @@ def create_config_set(group_by_name=None):
     # fix group
     g = ConfigGroup()
     s.add_group("grp", g)
-    v = ConfigIntValue(0)
+    v = ConfigIntValue()
     g.add_value("bla", v)
-    v2 = ConfigEnumValue(("a", "b", "c"), "a")
+    v2 = ConfigEnumValue(("a", "b", "c"))
     g.add_value("foo", v2)
-    v3 = ConfigBoolValue(False)
+    v3 = ConfigBoolValue()
     g.add_value("b1", v3)
-    v4 = ConfigBoolValue(True)
+    v4 = ConfigBoolValue()
     g.add_value("b2", v4)
     # dyn group
     g2 = ConfigGroup()
     g2k = ConfigKeyGlob("*.lib")
     s.add_key_group(g2k, g2, group_by_name)
-    v5 = ConfigIntValue(21)
+    v5 = ConfigIntValue()
     g2.add_value("baz", v5)
     return s
 

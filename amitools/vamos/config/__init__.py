@@ -1,2 +1,1 @@
-from .VamosConfig import VamosConfig
-from .VamosLibConfig import VamosLibConfig
+from .path import *

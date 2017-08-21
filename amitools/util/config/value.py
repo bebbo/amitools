@@ -2,6 +2,7 @@
 
 import os
 import sys
+import re
 
 if sys.version_info >= (3, 0, 0):
     str_type = str
@@ -11,16 +12,11 @@ else:
 
 class ConfigBaseValue(object):
 
-    def __init__(self, default=None, val_type=None):
+    def __init__(self, val_type=None):
         self.val_type = val_type
-        self.default = self.parse_value(default)
 
     def __repr__(self):
-        return "ConfigValue(default={}, val_type={})" \
-            .format(self.default, self.val_type)
-
-    def get_default(self):
-        return self.default
+        return "ConfigValue(val_type={})" .format(self.val_type)
 
     def parse_value(self, v, old_val=None):
         v = self._conv_value(v)
@@ -39,8 +35,8 @@ class ConfigBaseValue(object):
 
 class ConfigBoolValue(ConfigBaseValue):
 
-    def __init__(self, default=False):
-        super(ConfigBoolValue, self).__init__(default, bool)
+    def __init__(self):
+        super(ConfigBoolValue, self).__init__(bool)
 
     def _conv_value(self, v):
         if isinstance(v, str_type):
@@ -54,9 +50,9 @@ class ConfigBoolValue(ConfigBaseValue):
 
 class ConfigIntValue(ConfigBaseValue):
 
-    def __init__(self, default=0, int_range=None):
+    def __init__(self, int_range=None):
+        super(ConfigIntValue, self).__init__(int)
         self.int_range = int_range
-        super(ConfigIntValue, self).__init__(default, int)
 
     def _conv_value(self, v):
         if isinstance(v, str_type):
@@ -88,9 +84,9 @@ class ConfigIntValue(ConfigBaseValue):
 
 class ConfigSizeValue(ConfigIntValue):
 
-    def __init__(self, default=0, int_range=None, units=1024):
+    def __init__(self, int_range=None, units=1024):
+        super(ConfigSizeValue, self).__init__(int_range)
         self.units = units
-        super(ConfigSizeValue, self).__init__(default, int_range)
 
     def _conv_value(self, v):
         scale = 1
@@ -120,9 +116,9 @@ class ConfigSizeValue(ConfigIntValue):
 
 class ConfigStringValue(ConfigBaseValue):
 
-    def __init__(self, default=None, allow_none=False):
+    def __init__(self, allow_none=False):
+        super(ConfigStringValue, self).__init__(str)
         self.allow_none = allow_none
-        super(ConfigStringValue, self).__init__(default, str)
 
     def _conv_value(self, v):
         if self.allow_none and v is None:
@@ -139,10 +135,10 @@ class ConfigStringValue(ConfigBaseValue):
 
 class ConfigPathValue(ConfigStringValue):
 
-    def __init__(self, default=None, is_dir=False, must_exist=False):
+    def __init__(self, is_dir=False, must_exist=False):
+        super(ConfigPathValue, self).__init__()
         self.is_dir = is_dir
         self.must_exist = must_exist
-        super(ConfigPathValue, self).__init__(default)
 
     def _check_value(self, v):
         if self.must_exist:
@@ -163,9 +159,29 @@ class ConfigPathValue(ConfigStringValue):
         return v
 
 
+class ConfigRegExValue(ConfigStringValue):
+
+    def __init__(self, regex, case=False):
+        self.regex = regex
+        self.prog = re.compile(regex, 0 if case else re.IGNORECASE)
+        super(ConfigRegExValue, self).__init__()
+
+    def _check_value(self, v):
+        m = self.prog.match(v)
+        if m is None:
+            raise ValueError("does not match regex={}: {}"
+                             .format(self.regex, v))
+        elif m.end() != len(v):
+            raise ValueError("no full match: regex={}: {}"
+                             .format(self.regex, v))
+        else:
+            return v
+
+
 class ConfigEnumValue(ConfigStringValue):
 
-    def __init__(self, val_map, default):
+    def __init__(self, val_map):
+        super(ConfigEnumValue, self).__init__()
         # convert list
         if type(val_map) in (list, tuple):
             d = {}
@@ -174,7 +190,6 @@ class ConfigEnumValue(ConfigStringValue):
             self.val_map = d
         else:
             self.val_map = val_map
-        super(ConfigEnumValue, self).__init__(default)
 
     def _conv_value(self, v):
         if v in self.val_map:
@@ -189,18 +204,17 @@ class ConfigEnumValue(ConfigStringValue):
 
 class ConfigValueList(ConfigBaseValue):
 
-    def __init__(self, entry_cfg, default=None,
+    def __init__(self, entry_cfg, allow_empty=True,
                  entry_sep=None, append_prefix=None):
         self.entry_cfg = entry_cfg
         if entry_sep is None:
             entry_sep = ','
         if append_prefix is None:
             append_prefix = '+'
-        if default is None:
-            default = []
+        self.allow_empty = allow_empty
         self.entry_sep = entry_sep
         self.append_prefix = append_prefix
-        super(ConfigValueList, self).__init__(default, list)
+        super(ConfigValueList, self).__init__(list)
 
     def parse_value(self, v, old_val=None):
         """parse a list entry.
@@ -219,9 +233,9 @@ class ConfigValueList(ConfigBaseValue):
             ValueError  is parsing went wrong
         """
         if v is None:
-            return []
+            res = []
         elif type(v) in (tuple, list):
-            return list(map(self.entry_cfg.parse_value, v))
+            res = list(map(self.entry_cfg.parse_value, v))
         else:
             s = str(v)
             append = False
@@ -233,6 +247,8 @@ class ConfigValueList(ConfigBaseValue):
             res = list(map(self.entry_cfg.parse_value, entries))
             # append to old list
             if append and old_val is not None:
-                return old_val + res
-            else:
-                return res
+                res = old_val + res
+        # check result
+        if not self.allow_empty and len(res) == 0:
+            raise ValueError("no empty list allowed!")
+        return res
