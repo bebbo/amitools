@@ -89,6 +89,30 @@ def test_config_val_regex_case():
         v.parse_value("AbCeFGd")
 
 
+def test_config_val_path_file():
+    v = ConfigPathValue()
+    assert v.parse_value("a/fantasy/name") == "a/fantasy/name"
+    # existing path
+    v = ConfigPathValue(must_exist=True)
+    test_path = __file__
+    assert v.parse_value(test_path) == test_path
+
+
+def test_config_val_path_dir():
+    # existing path
+    v = ConfigPathValue(must_exist=True, is_dir=True)
+    test_path = os.path.dirname(__file__)
+    assert v.parse_value(test_path) == test_path
+    # expand
+    home_path = os.path.expanduser("~")
+    v = ConfigPathValue(must_exist=True, is_dir=True, expand=True)
+    assert v.parse_value("~") == home_path
+    # abs path
+    test_path = os.path.abspath(".")
+    v = ConfigPathValue(must_exist=True, is_dir=True, make_abs=True)
+    assert v.parse_value(".") == test_path
+
+
 def test_config_val_enum_list():
     v = ConfigEnumValue(("a", "b", "c"))
     assert v.parse_value("b") == "b"
