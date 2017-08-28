@@ -67,6 +67,10 @@ class ConfigMainParser(object):
         """return the final config dict"""
         return self.cfg_dict
 
+    def get_cfg_def(self):
+        """return the config definition"""
+        return self.cfg_set
+
     def parse(self, args=None, namespace=None):
         """main parse call. pass command args and get final config
 

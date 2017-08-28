@@ -192,8 +192,9 @@ class ConfigRegExValue(ConfigStringValue):
 
 class ConfigEnumValue(ConfigStringValue):
 
-    def __init__(self, val_map):
+    def __init__(self, val_map, case=False):
         super(ConfigEnumValue, self).__init__()
+        self.case = case
         # convert list
         if type(val_map) in (list, tuple):
             d = {}
@@ -204,13 +205,27 @@ class ConfigEnumValue(ConfigStringValue):
             self.val_map = val_map
 
     def _conv_value(self, v):
-        if v in self.val_map:
-            return self.val_map[v]
+        if self.case or not isinstance(v, str_type):
+            if v in self.val_map:
+                return self.val_map[v]
+            else:
+                return v
         else:
+            for a in self.val_map.keys():
+                if isinstance(a, str_type):
+                    if a.lower() == v.lower():
+                        return self.val_map[a]
             return v
 
     def _check_value(self, v):
-        if v not in self.val_map.values():
+        if self.case or not isinstance(v, str_type):
+            if v not in self.val_map.values():
+                raise ValueError("invalid enum value: {}".format(v))
+        else:
+            for a in self.val_map.values():
+                if isinstance(a, str_type):
+                    if a.lower() == v.lower():
+                        return
             raise ValueError("invalid enum value: {}".format(v))
 
 

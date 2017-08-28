@@ -7,6 +7,9 @@ class ValueArgParser(object):
         self.val_name = val_name
 
     def parse(self, cfg_set, creator, logger, in_val):
+        # ignore empty
+        if in_val is None:
+            return True
         return creator.parse_entry("args", cfg_set, logger,
                                    self.grp_name, self.val_name, in_val)
 
@@ -20,6 +23,9 @@ class DynValueArgParser(object):
         self.key_sep = '=' if key_sep is None else key_sep
 
     def parse(self, cfg_set, creator, logger, in_val):
+        if in_val is None:
+            # ignore empty
+            return True
         return self._parse_pairs(cfg_set, creator, logger, in_val,
                                  self.grp_name)
 
@@ -71,6 +77,9 @@ class DynGroupArgParser(DynValueArgParser):
         self.grp_sep = ':' if grp_sep is None else grp_sep
 
     def parse(self, cfg_set, creator, logger, in_val):
+        # ignore empty in_val
+        if in_val is None:
+            return True
         # split group name from in_val
         pos = in_val.find(self.grp_sep)
         if pos == -1:
@@ -160,6 +169,26 @@ class ConfigArgsParser(object):
                                     const=const)
         # create argument
         # add parser
+        p = ValueArgParser(grp_name, val_name)
+        self.entries[arg_var] = p
+
+    def add_counter_value(self, grp_name, val_name, arg_name,
+                          long_arg_name=None, desc=None, default=0):
+        """create an option argument that maps to an integer counter.
+
+        By default the value is set to ``default`` if arg is missing.
+        Every time you mention the argument the counter is incremented by one.
+
+        Args:
+            grp_name (str): group name of value
+            val_name (str): name of value in group
+            arg_name (str): argument name for argparse, e.g. ``-a``
+            long_arg_name (str, optional): long argument name, e.g. ``--foo``
+            desc (str): argument description
+            default (int): start value of counter
+        """
+        arg_var = self._add_arg(arg_name, long_arg_name, desc,
+                                default=default, action='count')
         p = ValueArgParser(grp_name, val_name)
         self.entries[arg_var] = p
 

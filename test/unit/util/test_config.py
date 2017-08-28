@@ -116,6 +116,18 @@ def test_config_val_path_dir():
 def test_config_val_enum_list():
     v = ConfigEnumValue(("a", "b", "c"))
     assert v.parse_value("b") == "b"
+    assert v.parse_value("B") == "b"
+    with pytest.raises(ValueError):
+        v.parse_value("d")
+    with pytest.raises(ValueError):
+        v.parse_value(12)
+
+
+def test_config_val_enum_list_case():
+    v = ConfigEnumValue(("a", "b", "c"), case=True)
+    assert v.parse_value("b") == "b"
+    with pytest.raises(ValueError):
+        v.parse_value("B")
     with pytest.raises(ValueError):
         v.parse_value("d")
     with pytest.raises(ValueError):
@@ -125,7 +137,20 @@ def test_config_val_enum_list():
 def test_config_val_enum_map():
     v = ConfigEnumValue({"a": 0, "b": 1, "c": 2})
     assert v.parse_value("b") == 1
+    assert v.parse_value("B") == 1
     assert v.parse_value(2) == 2
+    with pytest.raises(ValueError):
+        v.parse_value("d")
+    with pytest.raises(ValueError):
+        v.parse_value(12)
+
+
+def test_config_val_enum_map_case():
+    v = ConfigEnumValue({"a": 0, "b": 1, "c": 2}, case=True)
+    assert v.parse_value("b") == 1
+    assert v.parse_value(2) == 2
+    with pytest.raises(ValueError):
+        v.parse_value("B")
     with pytest.raises(ValueError):
         v.parse_value("d")
     with pytest.raises(ValueError):
@@ -267,8 +292,8 @@ def create_config_set(group_by_name=None):
     g2 = ConfigGroup()
     g2k = ConfigKeyGlob("*.lib")
     s.add_key_group(g2k, g2, group_by_name)
-    v5 = ConfigIntValue()
-    g2.add_value("baz", v5)
+    vx1 = ConfigIntValue()
+    g2.add_value("baz", vx1)
     return s
 
 
@@ -740,6 +765,60 @@ def test_config_args_bool_value_const():
     assert cfg == {'grp': {'foo': 'c'}}
 
 
+def test_config_args_counter_value():
+    s = create_config_set()
+    c = ConfigCreator()
+    pl = PreLogger()
+    a = argparse.ArgumentParser()
+    ap = ConfigArgsParser(a)
+    ap.add_counter_value('grp', 'bla', '-b', '--bla', desc="inc bla counter")
+    # no arg
+    args = a.parse_args([])
+    ok = ap.parse(s, c, pl, args)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    cfg = c.get_cfg_set()
+    assert cfg == {'grp': {'bla': 0}}
+    # shot arg
+    args = a.parse_args("-b".split())
+    ok = ap.parse(s, c, pl, args)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    cfg = c.get_cfg_set()
+    assert cfg == {'grp': {'bla': 1}}
+    # double short arg
+    args = a.parse_args("-b -b".split())
+    ok = ap.parse(s, c, pl, args)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    cfg = c.get_cfg_set()
+    assert cfg == {'grp': {'bla': 2}}
+    # long arg
+    args = a.parse_args("--bla".split())
+    ok = ap.parse(s, c, pl, args)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    cfg = c.get_cfg_set()
+    assert cfg == {'grp': {'bla': 1}}
+    # double long arg
+    args = a.parse_args("--bla --bla".split())
+    ok = ap.parse(s, c, pl, args)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    cfg = c.get_cfg_set()
+    assert cfg == {'grp': {'bla': 2}}
+
+
 def test_config_args_dyn_value_ok():
     s = create_config_set()
     c = ConfigCreator()
@@ -756,6 +835,24 @@ def test_config_args_dyn_value_ok():
     assert pl.get_num_msgs(logging.CRITICAL) == 0
     cfg = c.get_cfg_set()
     assert cfg == {'grp': {'bla': 12, 'foo': 'b'}}
+
+
+def test_config_args_dyn_value_empty():
+    s = create_config_set()
+    c = ConfigCreator()
+    pl = PreLogger()
+    a = argparse.ArgumentParser()
+    ap = ConfigArgsParser(a)
+    ap.add_dyn_value('grp', '-g', desc="set grp values")
+    # parse arg list
+    args = a.parse_args("".split())
+    ok = ap.parse(s, c, pl, args)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    cfg = c.get_cfg_set()
+    assert cfg == {}
 
 
 def test_config_args_dyn_value_error():
@@ -831,6 +928,25 @@ def test_config_args_dyn_group_ok():
     assert pl.get_num_msgs(logging.CRITICAL) == 0
     cfg = c.get_cfg_set()
     assert cfg == {'grp': {'bla': 12, 'foo': 'b'}}
+
+
+def test_config_args_dyn_group_empty():
+    s = create_config_set()
+    c = ConfigCreator()
+    pl = PreLogger()
+    a = argparse.ArgumentParser()
+    ap = ConfigArgsParser(a)
+    gk = ConfigKey('grp')
+    ap.add_dyn_group([gk], '-g', desc="set grp values")
+    # parse arg list
+    args = a.parse_args("".split())
+    ok = ap.parse(s, c, pl, args)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    cfg = c.get_cfg_set()
+    assert cfg == {}
 
 
 def test_config_args_dyn_group_error():
