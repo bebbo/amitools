@@ -18,7 +18,9 @@ class ConfigMainParser(object):
         **kwargs: extra args for argparse.ArgumentParser
     """
 
-    def __init__(self, cfg_set, def_cfg, **kwargs):
+    def __init__(self, cfg_set, def_cfg=None, **kwargs):
+        if def_cfg is None:
+            def_cfg = {}
         self.cfg_set = cfg_set
         self.def_cfg = def_cfg
         self.argument_parser = argparse.ArgumentParser(**kwargs)
@@ -34,6 +36,8 @@ class ConfigMainParser(object):
         # for derived classes
         self._setup_arg_parser(self.arg_parser)
         self._setup_file_parser(self.file_parser)
+        # post parse callbacks
+        self.post_callbacks = []
 
     def _setup_arg_parser(self, arg_parser):
         pass
@@ -42,6 +46,9 @@ class ConfigMainParser(object):
         # add switches to argument parser
         file_parser.add_select_local_config_arg(self.argument_parser)
         file_parser.add_skip_global_config_arg(self.argument_parser)
+
+    def add_post_parse_callback(self, cb):
+        self.post_callbacks.append(cb)
 
     def get_arg_parser(self):
         """return the argparse.ArgumentParser for additional setup"""
@@ -71,6 +78,14 @@ class ConfigMainParser(object):
         """return the config definition"""
         return self.cfg_set
 
+    def get_cfg_default_dict(self):
+        """return the default dictionary"""
+        return self.def_cfg
+
+    def set_logger(self, logger):
+        """replace the pre-logger once logging is fully setup"""
+        self.logger = logger
+
     def parse(self, args=None, namespace=None):
         """main parse call. pass command args and get final config
 
@@ -86,4 +101,9 @@ class ConfigMainParser(object):
             if not ok:
                 return False
         self.cfg_dict = creator.get_cfg_set()
+        # post callbacks
+        for cb in self.post_callbacks:
+            res = cb()
+            if res is not None and res is not True:
+                return res
         return True

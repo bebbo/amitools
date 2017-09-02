@@ -136,8 +136,8 @@ class ConfigStringValue(ConfigBaseValue):
 class ConfigPathValue(ConfigStringValue):
 
     def __init__(self, is_dir=False, must_exist=False,
-                 expand=False, make_abs=False):
-        super(ConfigPathValue, self).__init__()
+                 expand=False, make_abs=False, allow_none=False):
+        super(ConfigPathValue, self).__init__(allow_none)
         self.is_dir = is_dir
         self.must_exist = must_exist
         self.expand = expand
@@ -145,14 +145,17 @@ class ConfigPathValue(ConfigStringValue):
 
     def _conv_value(self, v):
         v = super(ConfigPathValue, self)._conv_value(v)
-        if self.expand:
-            v = os.path.expanduser(v)
-        if self.make_abs:
-            v = os.path.abspath(v)
+        if v is not None:
+            if self.expand:
+                v = os.path.expanduser(v)
+            if self.make_abs:
+                v = os.path.abspath(v)
         return v
 
     def _check_value(self, v):
         super(ConfigPathValue, self)._check_value(v)
+        if v is None:
+            return v
         if self.must_exist:
             if self.is_dir:
                 if not os.path.isdir(v):

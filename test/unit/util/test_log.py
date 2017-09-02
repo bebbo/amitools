@@ -185,3 +185,90 @@ def test_log_group_args():
                            'quiet': 1,
                            'log_file': 'foo.log',
                            'default_level': logging.INFO}}
+
+
+def test_log_setup_minimal():
+    # empty config set
+    cfg_set = ConfigSet()
+    c = ConfigMainParser(cfg_set, prog="bluna")
+    l = LogSetup(c)
+    # parse args
+    ok = c.parse("".split())
+    assert ok
+    # default level
+    assert l.get_default_level() == logging.WARNING
+    # now get a logger and log
+    ml = l.get_logger("my_log")
+    ml.error("an error!")
+    # make sure its the default level
+    assert ml.getEffectiveLevel() == logging.WARNING
+
+
+def test_log_setup_default_level_verbose():
+    # empty config set
+    cfg_set = ConfigSet()
+    c = ConfigMainParser(cfg_set, prog="bluna")
+    l = LogSetup(c, cfg_level=logging.DEBUG)
+    # parse args: verbose
+    ok = c.parse("-v".split())
+    assert ok
+    # default is shifted to info
+    assert l.get_default_level() == logging.INFO
+    # now get a logger and log
+    ml = l.get_logger("my_log")
+    # make sure its the default level
+    assert ml.getEffectiveLevel() == logging.INFO
+    l.shutdown()
+
+
+def test_log_setup_default_level_quiet():
+    # empty config set
+    cfg_set = ConfigSet()
+    c = ConfigMainParser(cfg_set, prog="bluna")
+    l = LogSetup(c, cfg_level=logging.DEBUG)
+    # parse args: quiet
+    ok = c.parse("-q".split())
+    assert ok
+    # default is shifted to error
+    assert l.get_default_level() == logging.ERROR
+    # now get a logger and log
+    ml = l.get_logger("my_log")
+    # make sure its the default level
+    assert ml.getEffectiveLevel() == logging.ERROR
+
+
+def test_log_setup_set_loglevel():
+    # empty config set
+    cfg_set = ConfigSet()
+    c = ConfigMainParser(cfg_set)
+    l = LogSetup(c, cfg_level=logging.DEBUG)
+    # parse args
+    ok = c.parse("-l foo=info".split())
+    assert ok
+    # default level
+    assert l.get_default_level() == logging.WARNING
+    # now get a logger
+    ml = l.get_logger("foo")
+    # make sure its the defined level
+    assert ml.getEffectiveLevel() == logging.INFO
+    # even derived channels should work
+    ml2 = l.get_logger("foo.bar")
+    assert ml2.getEffectiveLevel() == logging.INFO
+
+
+def test_log_setup_module():
+    # empty config set
+    cfg_set = ConfigSet()
+    c = ConfigMainParser(cfg_set, prog="bluna")
+    init(c)
+    # parse args
+    ok = c.parse("".split())
+    assert ok
+    # default level
+    assert get_default_level() == logging.WARNING
+    # now get a logger and log
+    ml = get_logger("my_log")
+    ml.error("an error!")
+    # make sure its the default level
+    assert ml.getEffectiveLevel() == logging.WARNING
+    shutdown()
