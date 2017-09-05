@@ -26,8 +26,13 @@ class DynValueArgParser(object):
         if in_val is None:
             # ignore empty
             return True
-        return self._parse_pairs(cfg_set, creator, logger, in_val,
-                                 self.grp_name)
+        # in_val is a list
+        for elem in in_val:
+            ok = self._parse_pairs(cfg_set, creator, logger, elem,
+                                   self.grp_name)
+            if not ok:
+                return False
+        return True
 
     def _parse_pairs(self, cfg_set, creator, logger, in_val, grp_name):
         # first split line into key=value pairs
@@ -80,6 +85,14 @@ class DynGroupArgParser(DynValueArgParser):
         # ignore empty in_val
         if in_val is None:
             return True
+        # in_val is a list
+        for elem in in_val:
+            ok = self._parse_group(cfg_set, creator, logger, elem)
+            if not ok:
+                return False
+        return True
+
+    def _parse_group(self, cfg_set, creator, logger, in_val):
         # split group name from in_val
         pos = in_val.find(self.grp_sep)
         if pos == -1:
@@ -228,7 +241,7 @@ class ConfigArgsParser(object):
             val_sep (str, optional): char to separate values, default: ``,``
             key_sep (str, optional): char to separate key and value, ``=``
         """
-        arg_var = self._add_arg(arg_name, long_arg_name, desc)
+        arg_var = self._add_arg(arg_name, long_arg_name, desc, action='append')
         # add parser
         p = DynValueArgParser(grp_name, val_keys, val_sep, key_sep)
         self.entries[arg_var] = p
@@ -251,7 +264,7 @@ class ConfigArgsParser(object):
             key_sep (str, optional): char to separate key and value, ``=``
             grp_sep (str, optional): char to postfix group, ``:``
         """
-        arg_var = self._add_arg(arg_name, long_arg_name, desc)
+        arg_var = self._add_arg(arg_name, long_arg_name, desc, action='append')
         # add parser
         p = DynGroupArgParser(grp_keys, val_keys, val_sep, key_sep, grp_sep)
         self.entries[arg_var] = p
