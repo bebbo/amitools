@@ -238,7 +238,7 @@ class ConfigValueList(ConfigBaseValue):
                  entry_sep=None, append_prefix=None):
         self.entry_cfg = entry_cfg
         if entry_sep is None:
-            entry_sep = ','
+            entry_sep = '+'
         if append_prefix is None:
             append_prefix = '+'
         self.allow_empty = allow_empty

@@ -53,6 +53,34 @@ def test_vamos_config_volume_group():
     assert cfg == ref
 
 
+def test_vamos_config_volume_group_args():
+    # create config
+    vg = VolumeConfigGroup()
+    s = ConfigSet()
+    s.add_named_group(vg)
+    # setup parser
+    c = ConfigCreator()
+    pl = PreLogger()
+    a = argparse.ArgumentParser()
+    ap = ConfigArgsParser(a)
+    vg.add_args(ap)
+    # parse arg list
+    args = a.parse_args("-V bla=.,home=~".split())
+    ok = ap.parse(s, c, pl, args)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    cfg = c.get_cfg_set()
+    ref = {
+        'volumes': {
+            'bla': os.path.abspath('.'),
+            'home': os.path.expanduser('~')
+        }
+    }
+    assert cfg == ref
+
+
 def test_vamos_config_assign_group():
     ag = AssignConfigGroup()
     s = ConfigSet()
@@ -61,7 +89,7 @@ def test_vamos_config_assign_group():
         'assigns': {
             'bla': ['a:'],
             'foo': 'b:',
-            'bar': 'b:,c:'
+            'bar': 'b:+c:'
         }
     }
     dp = ConfigDictParser(d)
@@ -83,13 +111,41 @@ def test_vamos_config_assign_group():
     assert cfg == ref
 
 
-def test_vamos_config_path_group():
-    ag = PathConfigGroup()
+def test_vamos_config_assign_group_args():
+    # create config
+    ag = AssignConfigGroup()
     s = ConfigSet()
-    s.add_group("path", ag)
+    s.add_named_group(ag)
+    # setup parser
+    c = ConfigCreator()
+    pl = PreLogger()
+    a = argparse.ArgumentParser()
+    ap = ConfigArgsParser(a)
+    ag.add_args(ap)
+    # parse arg list
+    args = a.parse_args("-a bla=blub:+bluna:,foo=bar:".split())
+    ok = ap.parse(s, c, pl, args)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    cfg = c.get_cfg_set()
+    ref = {
+        'assigns': {
+            'bla': ['blub:', 'bluna:'],
+            'foo': ['bar:']
+        }
+    }
+    assert cfg == ref
+
+
+def test_vamos_config_path_group():
+    g = PathConfigGroup()
+    s = ConfigSet()
+    s.add_group("path", g)
     d = {
         'path': {
-            'path': ['a:']
+            'cmd_path': ['a:']
         }
     }
     dp = ConfigDictParser(d)
@@ -103,7 +159,34 @@ def test_vamos_config_path_group():
     cfg = c.get_cfg_set()
     ref = {
         'path': {
-            'path': ['a:']
+            'cmd_path': ['a:']
+        }
+    }
+    assert cfg == ref
+
+
+def test_vamos_config_path_group_args():
+    # create config
+    g = PathConfigGroup()
+    s = ConfigSet()
+    s.add_named_group(g)
+    # setup parser
+    c = ConfigCreator()
+    pl = PreLogger()
+    a = argparse.ArgumentParser()
+    ap = ConfigArgsParser(a)
+    g.add_args(ap)
+    # parse arg list
+    args = a.parse_args("-p c:+sc:c".split())
+    ok = ap.parse(s, c, pl, args)
+    assert ok
+    assert pl.get_num_msgs(logging.WARNING) == 0
+    assert pl.get_num_msgs(logging.ERROR) == 0
+    assert pl.get_num_msgs(logging.CRITICAL) == 0
+    cfg = c.get_cfg_set()
+    ref = {
+        'paths': {
+            'cmd_path': ['c:', 'sc:c'],
         }
     }
     assert cfg == ref

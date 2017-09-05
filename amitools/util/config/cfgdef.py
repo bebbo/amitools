@@ -28,8 +28,12 @@ class ConfigGroup(object):
     By default the key is derived from the name of the value.
     """
 
-    def __init__(self):
+    def __init__(self, name=None):
         self.entries = []
+        self.name = name
+
+    def get_name(self):
+        return self.name
 
     def add_entry(self, e):
         """add a value by its name as a key.
@@ -75,6 +79,10 @@ class ConfigSet(object):
         entry = ConfigEntry(key, grp, group_by_name)
         self.groups.append(entry)
         return entry
+
+    def add_named_group(self, grp, group_by_name=None):
+        name = grp.get_name()
+        return self.add_group(name, grp, group_by_name)
 
     def match_key(self, name):
         """find a key and return the associated entry or None.

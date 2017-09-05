@@ -32,12 +32,13 @@ class ConfigLogLevelGroup(ConfigGroup):
     """a group to store logger to level entries"""
 
     def __init__(self):
-        super(ConfigLogLevelGroup, self).__init__()
+        super(ConfigLogLevelGroup, self).__init__('loglevel')
         self.key = ConfigKeyRegEx("[A-Z_]+")
         self.val = ConfigLogLevelValue()
         self.add_key_value(self.key, self.val)
 
-    def add_args(self, parser, grp_name='loglevel'):
+    def add_args(self, parser):
+        grp_name = self.get_name()
         parser.add_dyn_value(grp_name, '-l', '--log-levels',
                              desc="set logging levels")
 
@@ -46,14 +47,15 @@ class ConfigLogGroup(ConfigGroup):
     """store logging configuration options"""
 
     def __init__(self):
-        super(ConfigLogGroup, self).__init__()
+        super(ConfigLogGroup, self).__init__('log')
         self.add_value("verbose", ConfigIntValue())
         self.add_value("quiet", ConfigIntValue())
         self.add_value("log_file", ConfigPathValue(
             expand=True, allow_none=True))
         self.add_value("default_level", ConfigLogLevelValue())
 
-    def add_args(self, parser, grp_name='log'):
+    def add_args(self, parser):
+        grp_name = self.get_name()
         parser.add_counter_value(grp_name, 'verbose', '-v', '--verbose',
                                  desc="increase verbosity of logging output")
         parser.add_counter_value(grp_name, 'quiet', '-q', '--quiet',
@@ -79,9 +81,9 @@ class LogSetup(object):
         # get the cfg def and add sections for log and loglevel
         cfg_def = main_cfg.get_cfg_def()
         llg = ConfigLogLevelGroup()
-        cfg_def.add_group("loglevel", llg)
+        cfg_def.add_named_group(llg)
         lg = ConfigLogGroup()
-        cfg_def.add_group("log", lg)
+        cfg_def.add_named_group(lg)
         # add to arg parser
         ap = main_cfg.get_cfg_arg_parser()
         llg.add_args(ap)

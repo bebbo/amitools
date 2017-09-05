@@ -163,14 +163,14 @@ def test_config_val_list():
     assert vl.parse_value(None) == []
     assert vl.parse_value([]) == []
     assert vl.parse_value(["a", "b"]) == ["a", "b"]
-    assert vl.parse_value("a,b") == ["a", "b"]
+    assert vl.parse_value("a+b") == ["a", "b"]
 
 
 def test_config_val_list_append():
     v = ConfigStringValue()
     vl = ConfigValueList(v)
-    assert vl.parse_value("+a,b") == ["a", "b"]
-    assert vl.parse_value("+a,b", ["c"]) == ["c", "a", "b"]
+    assert vl.parse_value("+a+b") == ["a", "b"]
+    assert vl.parse_value("+a+b", ["c"]) == ["c", "a", "b"]
 
 # ----- keys
 
