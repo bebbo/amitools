@@ -183,11 +183,14 @@ class LogSetup(object):
                 return lvl
             # adjust index
             pos += delta
-            # out of range
-            if pos < 0 or pos >= len(levels):
-                return lvl
-            else:
-                return levels[pos]
+            # out of range: clamp
+            n = len(levels)
+            if pos < 0:
+                pos = 0
+            elif pos >= n:
+                pos = n-1
+            # return level value
+            return levels[pos]
         except:
             return lvl
 

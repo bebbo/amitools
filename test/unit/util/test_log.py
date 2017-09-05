@@ -221,6 +221,23 @@ def test_log_setup_default_level_verbose():
     l.shutdown()
 
 
+def test_log_setup_default_level_verbose_max():
+    # empty config set
+    cfg_set = ConfigSet()
+    c = ConfigMainParser(cfg_set, prog="bluna")
+    l = LogSetup(c, cfg_level=logging.INFO)
+    # parse args: verbose
+    ok = c.parse("-vvvvv".split())
+    assert ok
+    # default is shifted to info
+    assert l.get_default_level() == logging.DEBUG
+    # now get a logger and log
+    ml = l.get_logger("my_log")
+    # make sure its the default level
+    assert ml.getEffectiveLevel() == logging.DEBUG
+    l.shutdown()
+
+
 def test_log_setup_default_level_quiet():
     # empty config set
     cfg_set = ConfigSet()
@@ -236,6 +253,22 @@ def test_log_setup_default_level_quiet():
     # make sure its the default level
     assert ml.getEffectiveLevel() == logging.ERROR
 
+
+
+def test_log_setup_default_level_quiet_max():
+    # empty config set
+    cfg_set = ConfigSet()
+    c = ConfigMainParser(cfg_set, prog="bluna")
+    l = LogSetup(c, cfg_level=logging.DEBUG)
+    # parse args: quiet
+    ok = c.parse("-qqqqq".split())
+    assert ok
+    # default is shifted to error
+    assert l.get_default_level() == OFF
+    # now get a logger and log
+    ml = l.get_logger("my_log")
+    # make sure its the default level
+    assert ml.getEffectiveLevel() == OFF
 
 def test_log_setup_set_loglevel():
     # empty config set
