@@ -122,8 +122,10 @@ class ConfigArgsParser(object):
     def __init__(self, aparser):
         self.aparser = aparser
         self.entries = {}
+        self.arg_groups = {}
 
-    def _add_arg(self, arg_name, long_arg_name, desc, **kwargs):
+    def _add_arg(self, arg_name, long_arg_name, desc, arg_group=None,
+                 **kwargs):
         # build args
         args = [arg_name]
         if long_arg_name is not None:
@@ -134,7 +136,16 @@ class ConfigArgsParser(object):
         if need_dest:
             kwargs['dest'] = arg_var
         # add argparse argument
-        self.aparser.add_argument(*args, **kwargs)
+        if arg_group is None:
+            self.aparser.add_argument(*args, **kwargs)
+        else:
+            # does arg_group exist?
+            if arg_group in self.arg_groups:
+                ag = self.arg_groups[arg_group]
+            else:
+                ag = self.aparser.add_argument_group(arg_group)
+                self.arg_groups[arg_group] = ag
+            ag.add_argument(*args, **kwargs)
         return arg_var
 
     def _get_arg_var(self, arg_name, long_arg_name):
@@ -154,7 +165,7 @@ class ConfigArgsParser(object):
 
     def add_bool_value(self, grp_name, val_name, arg_name,
                        long_arg_name=None, desc=None, default=False,
-                       const=None):
+                       const=None, arg_group=None):
         """create an option argument that maps to a bool value.
 
         By default the value is set to ``False`` if arg is missing or set to
@@ -169,24 +180,27 @@ class ConfigArgsParser(object):
             desc (str): argument description
             default (bool): value if arg is not set
             const (any): store this value if argument is set
+            arg_group (argparse.Group, optional): add argument to group
         """
         # store action?
         if const is None:
             action = 'store_true' if not default else 'store_false'
             arg_var = self._add_arg(arg_name, long_arg_name, desc,
-                                    default=default, action=action)
+                                    default=default, action=action,
+                                    arg_group=arg_group)
         else:
             action = 'store_const'
             arg_var = self._add_arg(arg_name, long_arg_name, desc,
                                     default=default, action=action,
-                                    const=const)
+                                    const=const, arg_group=arg_group)
         # create argument
         # add parser
         p = ValueArgParser(grp_name, val_name)
         self.entries[arg_var] = p
 
     def add_counter_value(self, grp_name, val_name, arg_name,
-                          long_arg_name=None, desc=None, default=0):
+                          long_arg_name=None, desc=None, default=0,
+                          arg_group=None):
         """create an option argument that maps to an integer counter.
 
         By default the value is set to ``default`` if arg is missing.
@@ -199,14 +213,16 @@ class ConfigArgsParser(object):
             long_arg_name (str, optional): long argument name, e.g. ``--foo``
             desc (str): argument description
             default (int): start value of counter
+            arg_group (argparse.Group, optional): add argument to group
         """
         arg_var = self._add_arg(arg_name, long_arg_name, desc,
-                                default=default, action='count')
+                                default=default, action='count',
+                                arg_group=arg_group)
         p = ValueArgParser(grp_name, val_name)
         self.entries[arg_var] = p
 
     def add_value(self, grp_name, val_name, arg_name, long_arg_name=None,
-                  desc=None):
+                  desc=None, arg_group=None):
         """create an option argument that directly maps to value
 
         Args:
@@ -215,15 +231,18 @@ class ConfigArgsParser(object):
             arg_name (str): argument name for argparse, e.g. ``-a``
             long_arg_name (str, optional): long argument name, e.g. ``--foo``
             desc (str): argument description
+            arg_group (argparse.Group, optional): add argument to group
         """
         # create argument
-        arg_var = self._add_arg(arg_name, long_arg_name, desc)
+        arg_var = self._add_arg(arg_name, long_arg_name, desc,
+                                arg_group=arg_group)
         # add parser
         p = ValueArgParser(grp_name, val_name)
         self.entries[arg_var] = p
 
     def add_dyn_value(self, grp_name, arg_name, long_arg_name=None,
-                      val_keys=None, desc=None, val_sep=None, key_sep=None):
+                      val_keys=None, desc=None, val_sep=None, key_sep=None,
+                      arg_group=None):
         """allows you to specify one or multiple values in a group.
 
         The added arg allows to set multiple values of a group by specifying
@@ -240,15 +259,17 @@ class ConfigArgsParser(object):
             desc (str): argument description
             val_sep (str, optional): char to separate values, default: ``,``
             key_sep (str, optional): char to separate key and value, ``=``
+            arg_group (argparse.Group, optional): add argument to group
         """
-        arg_var = self._add_arg(arg_name, long_arg_name, desc, action='append')
+        arg_var = self._add_arg(arg_name, long_arg_name, desc,
+                                action='append', arg_group=arg_group)
         # add parser
         p = DynValueArgParser(grp_name, val_keys, val_sep, key_sep)
         self.entries[arg_var] = p
 
     def add_dyn_group(self, grp_keys, arg_name, long_arg_name=None,
                       val_keys=None, desc=None, val_sep=None, key_sep=None,
-                      grp_sep=None):
+                      grp_sep=None, arg_group=None):
         """allows you to specify one or multiple values in a set of groups.
 
         You specify an argument with a group name prefix first and then a
@@ -264,7 +285,8 @@ class ConfigArgsParser(object):
             key_sep (str, optional): char to separate key and value, ``=``
             grp_sep (str, optional): char to postfix group, ``:``
         """
-        arg_var = self._add_arg(arg_name, long_arg_name, desc, action='append')
+        arg_var = self._add_arg(arg_name, long_arg_name, desc,
+                                action='append', arg_group=None)
         # add parser
         p = DynGroupArgParser(grp_keys, val_keys, val_sep, key_sep, grp_sep)
         self.entries[arg_var] = p

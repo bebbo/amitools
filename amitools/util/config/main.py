@@ -14,20 +14,24 @@ class ConfigMainParser(object):
 
     Args:
         cfg_set (ConfigSet): configuration definition
-        def_cfg (dict): default config values stored in a dict
+        def_cfg (dict, optional): default config values stored in a dict
+        cfg_name (str, optional): allows you to overwrite config file name
         **kwargs: extra args for argparse.ArgumentParser
     """
 
-    def __init__(self, cfg_set, def_cfg=None, **kwargs):
+    def __init__(self, cfg_set, def_cfg=None, cfg_name=None, **kwargs):
         if def_cfg is None:
             def_cfg = {}
         self.cfg_set = cfg_set
         self.def_cfg = def_cfg
         self.argument_parser = argparse.ArgumentParser(**kwargs)
         self.logger = PreLogger()
+        # config file name: derive from prog name
+        if cfg_name is None:
+            cfg_name = self.argument_parser.prog
         # parsers
         self.def_parser = ConfigDictParser(def_cfg)
-        self.file_parser = ConfigFileManager(self.argument_parser.prog)
+        self.file_parser = ConfigFileManager(cfg_name)
         self.arg_parser = ConfigArgsParser(self.argument_parser)
         self.parsers = [self.def_parser, self.file_parser, self.arg_parser]
         # results
@@ -40,12 +44,14 @@ class ConfigMainParser(object):
         self.post_callbacks = []
 
     def _setup_arg_parser(self, arg_parser):
-        pass
+        grp_dict = {}
+        for grp_entry in self.cfg_set.get_groups():
+            grp = grp_entry.get_value()
+            grp.add_args(arg_parser, )
 
     def _setup_file_parser(self, file_parser):
         # add switches to argument parser
-        file_parser.add_select_local_config_arg(self.argument_parser)
-        file_parser.add_skip_global_config_arg(self.argument_parser)
+        file_parser.add_args(self.argument_parser)
 
     def add_post_parse_callback(self, cb):
         self.post_callbacks.append(cb)

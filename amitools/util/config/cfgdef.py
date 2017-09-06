@@ -58,6 +58,10 @@ class ConfigGroup(object):
                 return e
         return None
 
+    def add_args(self, aparser, agroup=None):
+        """automatically add arguments to a config args parser"""
+        pass
+
 
 class ConfigSet(object):
     """a config set combines a list of groups.
@@ -65,6 +69,9 @@ class ConfigSet(object):
 
     def __init__(self):
         self.groups = []
+
+    def get_groups(self):
+        return self.groups
 
     def add_entry(self, entry):
         if not isinstance(entry.get_value(), ConfigGroup):

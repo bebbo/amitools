@@ -11,7 +11,8 @@ scripts = {
     'vamos = amitools.tools.vamos:main',
     'vamospath = amitools.tools.vamospath:main',
     'xdfscan = amitools.tools.xdfscan:main',
-    'xdftool = amitools.tools.xdftool:main'
+    'xdftool = amitools.tools.xdftool:main',
+    'amipath = amitools.tools.amipath:main'
   ]
 }
 

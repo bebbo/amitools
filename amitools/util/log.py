@@ -37,10 +37,11 @@ class ConfigLogLevelGroup(ConfigGroup):
         self.val = ConfigLogLevelValue()
         self.add_key_value(self.key, self.val)
 
-    def add_args(self, parser):
+    def add_args(self, parser, arg_group="logging"):
         grp_name = self.get_name()
         parser.add_dyn_value(grp_name, '-l', '--log-levels',
-                             desc="set logging levels")
+                             desc="set logging levels",
+                             arg_group=arg_group)
 
 
 class ConfigLogGroup(ConfigGroup):
@@ -54,16 +55,20 @@ class ConfigLogGroup(ConfigGroup):
             expand=True, allow_none=True))
         self.add_value("default_level", ConfigLogLevelValue())
 
-    def add_args(self, parser):
+    def add_args(self, parser, arg_group="logging"):
         grp_name = self.get_name()
         parser.add_counter_value(grp_name, 'verbose', '-v', '--verbose',
-                                 desc="increase verbosity of logging output")
+                                 desc="increase verbosity of logging output",
+                                 arg_group=arg_group)
         parser.add_counter_value(grp_name, 'quiet', '-q', '--quiet',
-                                 desc="increase quietness of logging output")
+                                 desc="increase quietness of logging output",
+                                 arg_group=arg_group)
         parser.add_value(grp_name, 'log_file', '-L', '--log-file',
-                         desc="set output log file")
+                         desc="set output log file",
+                         arg_group=arg_group)
         parser.add_value(grp_name, 'default_level', '-D', '--default-level',
-                         desc="set default logging level")
+                         desc="set default logging level",
+                         arg_group=arg_group)
 
 
 class LogSetup(object):

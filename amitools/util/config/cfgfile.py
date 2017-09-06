@@ -103,8 +103,14 @@ class ConfigFileManager(object):
     def set_local_config_file(self, path, fobj=None):
         self.local_file = (path, fobj)
 
+    def add_args(self, argparser, agroup=None):
+        if agroup is None:
+            agroup = argparser.add_argument_group("config file")
+        self.add_skip_global_config_arg(argparser, agroup=agroup)
+        self.add_select_local_config_arg(argparser, agroup=agroup)
+
     def add_skip_global_config_arg(self, argparser,
-                                   name=None, long_name=None):
+                                   name=None, long_name=None, agroup=None):
         """add a switch to the argparser to disable the global config file
 
         By default the switch ``-S`` and long name ``--skip-global-config``
@@ -126,10 +132,13 @@ class ConfigFileManager(object):
             'help': help_txt,
             'dest': 'skip_global_config'
         }
-        argparser.add_argument(*args, **kwargs)
+        if agroup is None:
+            argparser.add_argument(*args, **kwargs)
+        else:
+            agroup.add_argument(*args, **kwargs)
 
     def add_select_local_config_arg(self, argparser,
-                                    name=None, long_name=None):
+                                    name=None, long_name=None, agroup=None):
         """add an argument to argparser that allows to pick the local config.
 
         By default the switch ``-c`` and ``--config-file`` is used.
@@ -150,7 +159,10 @@ class ConfigFileManager(object):
             'default': None,
             'dest': 'config_file'
         }
-        argparser.add_argument(*args, **kwargs)
+        if agroup is None:
+            argparser.add_argument(*args, **kwargs)
+        else:
+            agroup.add_argument(*args, **kwargs)
 
     def parse(self, cfg_set, creator, logger, args=None):
         # check args

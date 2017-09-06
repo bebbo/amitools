@@ -27,11 +27,10 @@ class VolumeConfigGroup(ConfigGroup):
                               make_abs=True, expand=True)
         self.add_key_value(key, val)
 
-    def add_args(self, parser, arg_group=None):
+    def add_args(self, parser):
         grp_name = self.get_name()
         parser.add_dyn_value(grp_name, '-V', '--volumes',
-                             desc="define Amiga volumes",
-                             arg_group=arg_group)
+                             desc="define Amiga volumes")
 
 
 class AssignConfigGroup(ConfigGroup):
@@ -44,11 +43,10 @@ class AssignConfigGroup(ConfigGroup):
         vlist = ConfigValueList(val, allow_empty=False)
         self.add_key_value(key, vlist)
 
-    def add_args(self, parser, arg_group=None):
+    def add_args(self, parser):
         grp_name = self.get_name()
         parser.add_dyn_value(grp_name, '-a', '--assigns',
-                             desc="define Amiga (multi) assigns",
-                             arg_group=arg_group)
+                             desc="define Amiga (multi) assigns")
 
 
 class PathConfigGroup(ConfigGroup):
@@ -60,14 +58,7 @@ class PathConfigGroup(ConfigGroup):
         vlist = ConfigValueList(val, allow_empty=False)
         self.add_value("cmd_path", vlist)
 
-    def add_args(self, parser, arg_group=None):
+    def add_args(self, parser):
         grp_name = self.get_name()
         parser.add_value(grp_name, 'cmd_path', '-p', '--cmd-path',
-                         desc="define Amiga command path",
-                         arg_group=arg_group)
-
-
-def add_path_config_groups(cfg_set):
-    cfg_set.add_named_group(PathConfigGroup())
-    cfg_set.add_named_group(VolumeConfigGroup())
-    cfg_set.add_named_group(AssignConfigGroup())
+                         desc="define Amiga command path")
