@@ -1,7 +1,7 @@
 import logging
 import pytest
 
-from amitools.vamos.config import *
+from amitools.path.config import *
 
 
 def test_vamos_config_dosname_key():
