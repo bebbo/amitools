@@ -23,6 +23,17 @@ class TestMgr(object):
         else:
             return None
 
+    def resolve_assign(self, name, recursive=True):
+        if name == "a":
+            if recursive:
+                return ["root:bla", "system:c/foo"]
+            else:
+                return ["b:", "c:foo"]
+        elif name == "b":
+            return ["root:bla"]
+        elif name == "c":
+            return ["system:c"]
+
 
 class TestEnv(object):
 
@@ -149,17 +160,17 @@ def test_amipath_multi_assigns():
         AmiPath("root:", mgr=mgr).is_multi_assign_path()
 
 
-def test_amipath_strip_last_name():
-    assert AmiPath("foo/bar").strip_last_name() == AmiPath("foo")
-    assert AmiPath("foo:bar/baz").strip_last_name() == AmiPath("foo:bar")
-    assert AmiPath("foo:bar").strip_last_name() == AmiPath("foo:")
-    assert AmiPath("foo:").strip_last_name() is None
-    assert AmiPath("/bar").strip_last_name() == AmiPath("/")
-    assert AmiPath("/bar/").strip_last_name() == AmiPath("/")
-    assert AmiPath("/").strip_last_name() is None
-    assert AmiPath(":").strip_last_name() is None
-    assert AmiPath(":bar").strip_last_name() == AmiPath(":")
-    assert AmiPath("bar").strip_last_name() == AmiPath()
+def test_amipath_parent():
+    assert AmiPath("foo/bar").parent() == AmiPath("foo")
+    assert AmiPath("foo:bar/baz").parent() == AmiPath("foo:bar")
+    assert AmiPath("foo:bar").parent() == AmiPath("foo:")
+    assert AmiPath("foo:").parent() is None
+    assert AmiPath("/bar").parent() == AmiPath("/")
+    assert AmiPath("/bar/").parent() == AmiPath("/")
+    assert AmiPath("/").parent() is None
+    assert AmiPath(":").parent() is None
+    assert AmiPath(":bar").parent() == AmiPath(":")
+    assert AmiPath("bar").parent() == AmiPath()
 
 
 def test_amipath_get_names():
@@ -260,3 +271,61 @@ def test_amipath_join_prefix_local():
     assert AmiPath(":").join(AmiPath("bar")) == AmiPath(":bar")
     assert AmiPath(":baz").join(AmiPath("bar")) == AmiPath(":baz/bar")
     assert AmiPath(":foo/baz").join(AmiPath("bar")) == AmiPath(":foo/baz/bar")
+
+
+def test_amipath_abspath():
+    # abspath of abs
+    p = AmiPath("foo:bar")
+    assert p.abspath() is p
+    # abspath of rel
+    env = TestEnv()
+    cur_dir = env.get_cur_dir()
+    assert AmiPath(env=env).abspath() == cur_dir
+    assert AmiPath("baz", env=env).abspath() == cur_dir.join(AmiPath("baz"))
+    assert AmiPath("/baz", env=env).abspath() == cur_dir.join(AmiPath("/baz"))
+
+
+def test_amipath_volpath():
+    env = TestEnv()
+    cur_dir = env.get_cur_dir()
+    # relpath
+    assert AmiPath(env=env).volpath() == cur_dir
+    assert AmiPath("foo", env=env).volpath() == cur_dir.join(AmiPath("foo"))
+    # volpath
+    assert AmiPath("work:bla", env=env).volpath() == AmiPath("work:bla")
+    # multi assign
+    with pytest.raises(AmiPathError):
+        AmiPath("a:bla", env=env).volpath()
+    # assign
+    assert AmiPath("b:foo", env=env).volpath() == AmiPath("root:bla/foo")
+
+
+def test_amipath_volpaths():
+    env = TestEnv()
+    cur_dir = env.get_cur_dir()
+    # relpath
+    assert AmiPath(env=env).volpaths() == [cur_dir]
+    assert AmiPath("foo", env=env).volpaths() == [cur_dir.join(AmiPath("foo"))]
+    # volpath
+    assert AmiPath("work:bla", env=env).volpaths() == [AmiPath("work:bla")]
+    # multi assign
+    AmiPath("a:bla", env=env).volpaths() == [AmiPath("root:bla/bla"),
+                                             AmiPath("system:c/foo/bla")]
+    # assign
+    assert AmiPath("b:foo", env=env).volpaths() == [AmiPath("root:bla/foo")]
+
+
+def test_amipath_map_assign():
+    env = TestEnv()
+    # relpath
+    assert AmiPath(env=env).map_assign() == [AmiPath()]
+    assert AmiPath("foo", env=env).map_assign() == [AmiPath("foo")]
+    # volpath
+    assert AmiPath("work:bla", env=env).map_assign() == [AmiPath("work:bla")]
+    # multi assign
+    AmiPath("a:bla", env=env).map_assign() == [AmiPath("b:bla"),
+                                               AmiPath("c:foo/bla")]
+    AmiPath("a:bla", env=env).map_assign(True) == [AmiPath("root:bla/bla"),
+                                                   AmiPath("system:c/foo/bla")]
+    # assign
+    assert AmiPath("b:foo", env=env).map_assign() == [AmiPath("root:bla/foo")]
