@@ -1,10 +1,11 @@
 class AmiPathError(Exception):
 
-    def __init__(self, reason):
+    def __init__(self, path, reason):
+        self.path = path
         self.reason = reason
 
     def __str__(self):
-        return "AmiPathError: %s" % self.reason
+        return "AmiPathError: %s: %s" % (self.path, self.reason)
 
 
 class AmiPath(object):
@@ -93,6 +94,30 @@ class AmiPath(object):
         """check if the path is relative to the prefix"""
         p = self.pstr
         return len(p) > 0 and p[0] == ':'
+
+    def is_name_only(self):
+        """check if the relative path is a single name only"""
+        p = self.pstr
+        if len(p) == 0:
+            return False
+        ps = p.find('/')
+        pc = p.find(':')
+        return ps == -1 and pc == -1
+
+    def ends_with_name(self):
+        """make sure the path ends with a name
+
+        A path ending with / or : is not valid.
+        """
+        p = self.pstr
+        # empty is invalid
+        if len(p) == 0:
+            return False
+        # last char must not be colon or slash
+        lc = p[-1]
+        if lc == '/' or lc == ':':
+            return False
+        return True
 
     def prefix(self):
         """if the path is absolute then a prefix string is returned.
@@ -191,7 +216,7 @@ class AmiPath(object):
         """check if prefix is either a volume or assign name"""
         p = self.prefix()
         if p is None:
-            raise AmiPathError("no prefix in path")
+            raise AmiPathError(self, "no prefix in path")
         mgr = self._ensure_mgr()
         return mgr.is_prefix_name(p)
 
@@ -202,7 +227,7 @@ class AmiPath(object):
         """
         p = self.prefix()
         if p is None:
-            raise AmiPathError("no prefix in path")
+            raise AmiPathError(self, "no prefix in path")
         mgr = self._ensure_mgr()
         return mgr.is_volume_name(p)
 
@@ -213,20 +238,20 @@ class AmiPath(object):
         """
         p = self.prefix()
         if p is None:
-            raise AmiPathError("no prefix in path")
+            raise AmiPathError(self, "no prefix in path")
         mgr = self._ensure_mgr()
         return mgr.is_assign_name(p)
 
     def is_multi_assign_path(self):
         """check if path resolves to multiple paths"""
         if self.is_local():
-            raise AmiPathError("no prefix in path")
+            raise AmiPathError(self, "no prefix in path")
         # check if global path prefix contains multi assigns
         p = self.prefix()
         mgr = self._ensure_mgr()
         res = mgr.contains_multi_assigns(p)
         if res is None:
-            raise AmiPathError("no assign in prefix")
+            raise AmiPathError(self, "no assign in prefix")
         return res
 
     def parent(self):
@@ -299,7 +324,8 @@ class AmiPath(object):
         # other is parent relative?
         elif opath.is_parent_local():
             if self.is_parent_local():
-                raise AmiPathError("can't join two parent relative paths")
+                raise AmiPathError(
+                    self, "can't join two parent relative paths")
             # try to strip last name of my path
             my = self.parent()
             if my is not None:
@@ -313,7 +339,7 @@ class AmiPath(object):
                     postfix = my_post + opath.postfix()
                 return self.rebuild(prefix, postfix)
             else:
-                raise AmiPathError("can't join parent relative path")
+                raise AmiPathError(self, "can't join parent relative path")
         # other is prefix local: ':bla'
         elif opath.is_prefix_local():
             prefix = self.prefix()
@@ -368,7 +394,7 @@ class AmiPath(object):
             if len(res) == 1:
                 return AmiPath(res[0]).join(AmiPath(self.postfix()))
             else:
-                raise AmiPathError("volpath() encountered multi assign!")
+                raise AmiPathError(self, "volpath() encountered multi assign!")
 
     def volpaths(self):
         """return a list of volume paths for this path.
@@ -403,3 +429,41 @@ class AmiPath(object):
                             vpaths))
         else:
             return [self]
+
+    def cmdpaths(self, with_cur_dir=True, make_volpaths=True):
+        """return a list of command paths derived from this path.
+
+        If the path contains a name only then a list containing the
+        current cmd paths form the path env are returned. If
+        with_cur_dir is enabled then the current dir is added as well.
+
+        If this path is not a name only then it is converted to a
+        volpath and returned in a single item list.
+
+        Path that do not end with name raise an AmiPathError
+        """
+        if self.is_name_only():
+            env = self._ensure_env()
+            # get cmd paths
+            cmd_paths = env.get_cmd_paths()
+            if make_volpaths:
+                res = []
+                for cmd_path in cmd_paths:
+                    res += cmd_path.volpaths()
+            else:
+                res = cmd_paths
+            # join our name
+            res = list(map(lambda x: x.join(self), res))
+            # add current dir
+            if with_cur_dir:
+                cur_dir = env.get_cur_dir()
+                res.append(cur_dir.join(self))
+            return res
+        elif self.ends_with_name():
+            # use my path only
+            if make_volpaths:
+                return self.volpaths()
+            else:
+                return [self]
+        else:
+            raise AmiPathError(self, "can't derive cmdpaths")

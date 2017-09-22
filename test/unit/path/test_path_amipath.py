@@ -38,10 +38,13 @@ class TestMgr(object):
 class TestEnv(object):
 
     def get_cur_dir(self):
-        return AmiPath("foo:bar")
+        return AmiPath("foo:bar", env=self)
 
     def get_mgr(self):
         return TestMgr()
+
+    def get_cmd_paths(self):
+        return [AmiPath("a:", env=self), AmiPath("c:", env=self)]
 
 
 def test_amipath_abs_rel():
@@ -51,30 +54,64 @@ def test_amipath_abs_rel():
     assert not p.is_absolute()
     assert not p.is_parent_local()
     assert not p.is_prefix_local()
+    assert not p.is_name_only()
+    assert not p.ends_with_name()
     # abs
     p = AmiPath("foo:bar")
     assert not p.is_local()
     assert p.is_absolute()
     assert not p.is_parent_local()
     assert not p.is_prefix_local()
+    assert not p.is_name_only()
+    assert p.ends_with_name()
+    # abs2
+    p = AmiPath("foo:")
+    assert not p.is_local()
+    assert p.is_absolute()
+    assert not p.is_parent_local()
+    assert not p.is_prefix_local()
+    assert not p.is_name_only()
+    assert not p.ends_with_name()
     # local
     p = AmiPath("foo/bar")
     assert p.is_local()
     assert not p.is_absolute()
     assert not p.is_parent_local()
     assert not p.is_prefix_local()
+    assert not p.is_name_only()
+    assert p.ends_with_name()
+    # local name
+    p = AmiPath("foo")
+    assert p.is_local()
+    assert not p.is_absolute()
+    assert not p.is_parent_local()
+    assert not p.is_prefix_local()
+    assert p.is_name_only()
+    assert p.ends_with_name()
     # special local
     p = AmiPath(":bla")
     assert p.is_local()
     assert not p.is_absolute()
     assert not p.is_parent_local()
     assert p.is_prefix_local()
+    assert not p.is_name_only()
+    assert p.ends_with_name()
     # parent local
     p = AmiPath("/bla")
     assert p.is_local()
     assert not p.is_absolute()
     assert p.is_parent_local()
     assert not p.is_prefix_local()
+    assert not p.is_name_only()
+    assert p.ends_with_name()
+    # parent local
+    p = AmiPath("/bla/")
+    assert p.is_local()
+    assert not p.is_absolute()
+    assert p.is_parent_local()
+    assert not p.is_prefix_local()
+    assert not p.is_name_only()
+    assert not p.ends_with_name()
 
 
 def test_amipath_prefix_postfix():
@@ -329,3 +366,37 @@ def test_amipath_map_assign():
                                                    AmiPath("system:c/foo/bla")]
     # assign
     assert AmiPath("b:foo", env=env).map_assign() == [AmiPath("root:bla/foo")]
+
+
+def test_amipath_cmdpaths():
+    env = TestEnv()
+    cur_dir = env.get_cur_dir()
+    # relpath
+    with pytest.raises(AmiPathError):
+        AmiPath().cmdpaths()
+    p = AmiPath("bla/blub", env=env)
+    assert p.cmdpaths() == [cur_dir.join(p)]
+    assert p.cmdpaths(make_volpaths=False) == [p]
+    p = AmiPath("bla/blub/", env=env)
+    with pytest.raises(AmiPathError):
+        p.cmdpaths()
+    # abspath
+    with pytest.raises(AmiPathError):
+        AmiPath("foo:").cmdpaths()
+    with pytest.raises(AmiPathError):
+        AmiPath("foo:bla/").cmdpaths()
+    p = AmiPath("root:cmd", env=env)
+    assert p.cmdpaths() == [p]
+    assert p.cmdpaths(make_volpaths=False) == [p]
+    # name only
+    p = AmiPath("cmd", env=env)
+    assert p.cmdpaths() == [AmiPath('root:bla/cmd'),
+                            AmiPath('system:c/foo/cmd'),
+                            AmiPath('system:c/cmd'),
+                            AmiPath('foo:bar/cmd')]
+    assert p.cmdpaths(with_cur_dir=False) == [AmiPath('root:bla/cmd'),
+                                              AmiPath('system:c/foo/cmd'),
+                                              AmiPath('system:c/cmd')]
+    assert p.cmdpaths(make_volpaths=False) == [AmiPath('a:cmd'),
+                                               AmiPath('c:cmd'),
+                                               AmiPath('foo:bar/cmd')]
